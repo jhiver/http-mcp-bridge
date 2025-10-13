@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO server_toolkits (server_id, toolkit_id) VALUES (?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "29345bfc7ce5918e161ad0a3e56b1470a3c9d9b12368f2eb04dbaf9f1521aec4"
+}

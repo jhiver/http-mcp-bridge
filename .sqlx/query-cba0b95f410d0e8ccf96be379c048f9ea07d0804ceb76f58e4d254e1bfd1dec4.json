@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE servers\n            SET access_level = ?, updated_at = unixepoch()\n            WHERE id = ? AND user_id = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "cba0b95f410d0e8ccf96be379c048f9ea07d0804ceb76f58e4d254e1bfd1dec4"
+}

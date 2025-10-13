@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT\n                s.id as \"server_id!: i64\",\n                s.name as \"server_name!: String\",\n                CAST(COUNT(DISTINCT ti.id) AS INTEGER) as \"instance_count!: i64\",\n                CAST(COUNT(CASE WHEN eh.started_at >= datetime('now', '-24 hours')\n                      THEN 1 END) AS INTEGER) as \"executions_24h!: i64\",\n                CAST(COUNT(CASE WHEN eh.status = 'success'\n                      AND eh.started_at >= datetime('now', '-24 hours')\n                      THEN 1 END) AS INTEGER) as \"success_count!: i64\",\n                CAST(COUNT(CASE WHEN eh.status = 'error'\n                      AND eh.started_at >= datetime('now', '-24 hours')\n                      THEN 1 END) AS INTEGER) as \"error_count!: i64\"\n            FROM servers s\n            LEFT JOIN tool_instances ti ON ti.server_id = s.id\n            LEFT JOIN execution_history eh ON eh.server_id = s.id\n            WHERE s.user_id = ?\n            GROUP BY s.id, s.name\n            ORDER BY s.name\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "server_id!: i64",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "server_name!: String",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "instance_count!: i64",
+        "ordinal": 2,
+        "type_info": "Null"
+      },
+      {
+        "name": "executions_24h!: i64",
+        "ordinal": 3,
+        "type_info": "Null"
+      },
+      {
+        "name": "success_count!: i64",
+        "ordinal": 4,
+        "type_info": "Null"
+      },
+      {
+        "name": "error_count!: i64",
+        "ordinal": 5,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "6f5fa6d6b85e73839a93a6816890dcadfba30a923aaf3537a402e67b0ea91556"
+}

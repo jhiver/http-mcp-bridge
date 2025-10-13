@@ -1,0 +1,337 @@
+{% extends "base_authenticated.html" %}
+
+{% block title %}Test {{ tool.name }} - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/toolkits">My Toolkits</a> /
+    <a href="/toolkits/{{ toolkit_id }}">{{ toolkit_title }}</a> /
+    Test {{ tool.name }}
+</div>
+
+<div class="page-header">
+    <div>
+        <h1>Test Tool: {{ tool.name }}</h1>
+    </div>
+    <div class="actions">
+        <a href="/toolkits/{{ toolkit_id }}" class="btn btn-small">Back to Toolkit</a>
+    </div>
+</div>
+
+{% if let Some(err) = error %}
+<div class="error">
+    <strong>Test Failed:</strong> {{ err }}
+</div>
+{% endif %}
+
+{% if let Some(result) = result %}
+<section class="test-results">
+    <h2>Test Results</h2>
+
+    <div class="result-status {% if result.is_success %}success{% else %}error{% endif %}">
+        HTTP {{ result.status }}
+    </div>
+
+    <details>
+        <summary><strong>cURL Command</strong></summary>
+        <pre class="curl-command">{{ result.curl_command }}</pre>
+    </details>
+
+    <details open>
+        <summary><strong>Response Body</strong></summary>
+        <pre class="response-body">{{ result.body }}</pre>
+    </details>
+
+    <details>
+        <summary><strong>Response Headers</strong></summary>
+        <table class="headers-table">
+            <thead>
+                <tr>
+                    <th>Header</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for (key, value) in result.headers %}
+                <tr>
+                    <td><code>{{ key }}</code></td>
+                    <td>{{ value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </details>
+</section>
+{% endif %}
+
+<section class="test-form">
+    <h2>Request Configuration</h2>
+
+    <div class="tool-info">
+        <dl>
+            <dt>Method</dt>
+            <dd><span class="method-badge">{{ tool.method }}</span></dd>
+
+            <dt>URL</dt>
+            <dd><code>{{ tool.url }}</code></dd>
+
+            <dt>Timeout</dt>
+            <dd>{{ tool.timeout_ms }}ms</dd>
+        </dl>
+    </div>
+
+    {% if parameters.is_empty() %}
+    <div class="info">
+        <p>This tool has no parameters. Click "Execute Test" to run it with the configured URL, headers, and body.</p>
+    </div>
+    <form method="post" action="/toolkits/{{ toolkit_id }}/tools/{{ tool.id }}/test">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="btn btn-primary">Execute Test</button>
+    </form>
+    {% else %}
+    <h3>Parameters</h3>
+    <p class="info">Enter values for each parameter below, then click "Execute Test".</p>
+
+    <form method="post" action="/toolkits/{{ toolkit_id }}/tools/{{ tool.id }}/test" class="form-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        {% for param in parameters %}
+        <div class="form-group">
+            <label for="param_{{ param.name }}">
+                {{ param.name }}
+                <span class="type-badge">{{ param.param_type }}</span>
+            </label>
+
+            {% if param.param_type == "boolean" %}
+                <input
+                    type="hidden"
+                    name="{{ param.name }}"
+                    value="false">
+                <input
+                    type="checkbox"
+                    id="param_{{ param.name }}"
+                    name="{{ param.name }}"
+                    value="true"
+                    {% if let Some(val) = submitted_values.get(param.name.as_str()) %}{% if val.as_str() == "true" %}checked{% endif %}{% endif %}>
+                <small>Check for true, uncheck for false</small>
+            {% else if param.param_type == "integer" %}
+                <input
+                    type="number"
+                    id="param_{{ param.name }}"
+                    name="{{ param.name }}"
+                    step="1"
+                    required
+                    placeholder="Enter integer value"
+                    {% if let Some(val) = submitted_values.get(param.name.as_str()) %}value="{{ val }}"{% endif %}>
+            {% else if param.param_type == "number" %}
+                <input
+                    type="number"
+                    id="param_{{ param.name }}"
+                    name="{{ param.name }}"
+                    step="any"
+                    required
+                    placeholder="Enter numeric value"
+                    {% if let Some(val) = submitted_values.get(param.name.as_str()) %}value="{{ val }}"{% endif %}>
+            {% else if param.param_type == "url" %}
+                <input
+                    type="url"
+                    id="param_{{ param.name }}"
+                    name="{{ param.name }}"
+                    required
+                    placeholder="https://example.com"
+                    {% if let Some(val) = submitted_values.get(param.name.as_str()) %}value="{{ val }}"{% endif %}>
+            {% else if param.param_type == "json" %}
+                <textarea
+                    id="param_{{ param.name }}"
+                    name="{{ param.name }}"
+                    rows="4"
+                    required
+                    style="font-family: monospace"
+                    placeholder='{"key": "value"}'>{% if let Some(val) = submitted_values.get(param.name.as_str()) %}{{ val }}{% endif %}</textarea>
+                <small>Enter valid JSON</small>
+            {% else %}
+                <input
+                    type="text"
+                    id="param_{{ param.name }}"
+                    name="{{ param.name }}"
+                    required
+                    placeholder="Enter {{ param.param_type }} value"
+                    {% if let Some(val) = submitted_values.get(param.name.as_str()) %}value="{{ val }}"{% endif %}>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Execute Test</button>
+        </div>
+    </form>
+    {% endif %}
+</section>
+
+<style>
+.test-results {
+    background: var(--light-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.result-status {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-bottom: 1rem;
+}
+
+.result-status.success {
+    background: rgba(137, 209, 133, 0.1);
+    color: var(--success);
+    border: 1px solid var(--success);
+}
+
+.result-status.error {
+    background: rgba(244, 135, 113, 0.1);
+    color: var(--error);
+    border: 1px solid var(--error);
+}
+
+.response-body {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem;
+    overflow-x: auto;
+    max-height: 400px;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: var(--fg);
+}
+
+.curl-command {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: monospace;
+    font-size: 0.85em;
+    color: var(--accent);
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.headers-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.headers-table th,
+.headers-table td {
+    padding: 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.headers-table th {
+    background: var(--bg);
+    font-weight: 600;
+    color: var(--text-bright);
+}
+
+.headers-table td {
+    color: var(--fg);
+}
+
+.headers-table code {
+    background: var(--bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.9em;
+    color: var(--primary);
+}
+
+details {
+    margin: 1rem 0;
+}
+
+details summary {
+    cursor: pointer;
+    padding: 0.5rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    user-select: none;
+    color: var(--text-bright);
+}
+
+details summary:hover {
+    background: var(--light-bg);
+    border-color: var(--primary);
+}
+
+.test-form {
+    background: var(--light-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.5rem;
+}
+
+.tool-info dl {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 0.5rem 1rem;
+    margin: 1rem 0;
+}
+
+.tool-info dt {
+    font-weight: 600;
+    color: var(--text-dim);
+}
+
+.tool-info dd {
+    margin: 0;
+}
+
+.method-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: #007bff;
+    color: white;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.type-badge {
+    display: inline-block;
+    padding: 0.15rem 0.4rem;
+    background: #6c757d;
+    color: white;
+    border-radius: 3px;
+    font-size: 0.75em;
+    font-weight: 500;
+    margin-left: 0.5rem;
+}
+
+.info {
+    background: rgba(86, 156, 214, 0.1);
+    border: 1px solid var(--primary);
+    border-radius: 4px;
+    padding: 1rem;
+    margin: 1rem 0;
+    color: var(--primary);
+}
+
+.error {
+    background: rgba(244, 135, 113, 0.1);
+    border: 1px solid var(--error);
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    color: var(--error);
+}
+</style>
+{% endblock %}

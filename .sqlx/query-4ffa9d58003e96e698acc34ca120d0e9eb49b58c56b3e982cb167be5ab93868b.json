@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT\n                s.id,\n                s.uuid as \"uuid!\",\n                s.name,\n                s.description,\n                CAST(COUNT(DISTINCT st.toolkit_id) AS INTEGER) as \"toolkit_count!: i64\",\n                CAST(COUNT(DISTINCT ti.id) AS INTEGER) as \"instance_count!: i64\",\n                s.created_at\n            FROM servers s\n            LEFT JOIN server_toolkits st ON s.id = st.server_id\n            LEFT JOIN tool_instances ti ON s.id = ti.server_id\n            WHERE s.user_id = ?\n            GROUP BY s.id\n            ORDER BY s.created_at DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "uuid!",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "description",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "toolkit_count!: i64",
+        "ordinal": 4,
+        "type_info": "Null"
+      },
+      {
+        "name": "instance_count!: i64",
+        "ordinal": 5,
+        "type_info": "Null"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 6,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      true,
+      false,
+      true,
+      null,
+      null,
+      true
+    ]
+  },
+  "hash": "4ffa9d58003e96e698acc34ca120d0e9eb49b58c56b3e982cb167be5ab93868b"
+}

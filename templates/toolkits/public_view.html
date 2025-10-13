@@ -1,0 +1,208 @@
+{% extends "base_authenticated.html" %}
+
+{% block title %}{{ details.toolkit.title }} - Public Toolkit - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/toolkits/explore">Discover</a> / {{ details.toolkit.title }}
+</div>
+
+<div class="public-toolkit-header">
+    <div class="page-header">
+        <div>
+            <h1>{{ details.toolkit.title }}</h1>
+            {% if details.toolkit.description.is_some() %}
+            <p class="description">{{ details.toolkit.description.as_ref().unwrap() }}</p>
+            {% else %}
+            <p class="description text-muted">No description provided</p>
+            {% endif %}
+
+            <div class="toolkit-metadata">
+                <span class="metadata-item">
+                    <strong>Owner:</strong> {{ details.owner_email }}
+                </span>
+                <span class="metadata-item">
+                    <strong>Clone Count:</strong> {{ details.toolkit.clone_count }}
+                </span>
+                <span class="metadata-item">
+                    <strong>Visibility:</strong> <span class="badge badge-public">Public</span>
+                </span>
+            </div>
+
+            {% if details.parent_toolkit.is_some() %}
+            <div class="parent-toolkit-info">
+                <span class="text-muted">Cloned from:</span>
+                <strong>{{ details.parent_toolkit.as_ref().unwrap().title }}</strong>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="action-buttons">
+            <form action="/toolkits/{{ details.toolkit.id }}/clone" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn btn-success">🔄 Clone This Toolkit</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<section class="tools-section">
+    <h2>Tools in this Toolkit</h2>
+
+    {% if details.tools.is_empty() %}
+    <div class="empty-state">
+        <p>This toolkit doesn't contain any tools yet.</p>
+    </div>
+    {% else %}
+    <div class="notice-box">
+        <p>ℹ️ This is a public toolkit. You can view the tools but cannot modify them. Clone this toolkit to make your own editable copy.</p>
+    </div>
+
+    <table class="tools-table read-only">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Method</th>
+                <th>URL</th>
+                <th>Description</th>
+                <th>Parameters</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tool in details.tools %}
+            <tr>
+                <td>
+                    <strong>{{ tool.name }}</strong>
+                </td>
+                <td><span class="method-badge">{{ tool.method }}</span></td>
+                <td class="url-cell">
+                    {% if tool.url.is_some() %}
+                        {{ tool.url.as_ref().unwrap() }}
+                    {% else %}
+                        <span class="text-muted">No URL</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if tool.description.is_some() %}
+                        {{ tool.description.as_ref().unwrap() }}
+                    {% else %}
+                        <span class="text-muted">No description</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="text-muted">-</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</section>
+
+<style>
+.public-toolkit-header {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.toolkit-metadata {
+    display: flex;
+    gap: 30px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.metadata-item {
+    color: inherit;
+    opacity: 0.8;
+    font-size: 0.95rem;
+}
+
+.parent-toolkit-info {
+    margin-top: 15px;
+    padding: 10px;
+    background: rgba(0, 123, 255, 0.1);
+    border-left: 3px solid #007bff;
+    border-radius: 4px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 4px;
+}
+
+.badge-public {
+    color: #fff;
+    background-color: #28a745;
+}
+
+.notice-box {
+    background: rgba(0, 123, 255, 0.1);
+    border: 1px solid rgba(0, 123, 255, 0.3);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    color: inherit;
+    opacity: 0.9;
+}
+
+.tools-table.read-only {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.tools-table.read-only tbody tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.method-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 3px;
+    background: #007bff;
+    color: white;
+}
+
+.url-cell {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    word-break: break-all;
+    max-width: 400px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    font-size: 1rem;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+</style>
+{% endblock %}

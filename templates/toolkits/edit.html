@@ -1,0 +1,69 @@
+{% extends "base_authenticated.html" %}
+
+{% block title %}Edit {{ toolkit.title }} - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Edit Toolkit</h1>
+    <a href="/toolkits/{{ toolkit.id }}" class="btn btn-small">Cancel</a>
+</div>
+
+{% if let Some(err) = error %}
+<div class="error">{{ err }}</div>
+{% endif %}
+
+<form method="post" action="/toolkits/{{ toolkit.id }}" class="form-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <div class="form-group">
+        <label for="title">Toolkit Name *</label>
+        <input
+            type="text"
+            id="title"
+            name="title"
+            required
+            maxlength="100"
+            value="{{ toolkit.title }}">
+        <small>A descriptive name for your toolkit</small>
+    </div>
+
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea
+            id="description"
+            name="description"
+            rows="3"
+            maxlength="500">{{ toolkit.description }}</textarea>
+        <small>Optional description to help you remember the purpose</small>
+    </div>
+
+    <div class="form-group">
+        <label>Visibility</label>
+        <div class="radio-group">
+            <label class="radio">
+                <input
+                    type="radio"
+                    name="visibility"
+                    value="private"
+                    {% if toolkit.visibility == "private" %}checked{% endif %}>
+                <span>Private</span>
+                <small>Only you can see this toolkit</small>
+            </label>
+            <label class="radio">
+                <input
+                    type="radio"
+                    name="visibility"
+                    value="public"
+                    {% if toolkit.visibility == "public" %}checked{% endif %}>
+                <span>Public</span>
+                <small>Others can discover and import this toolkit</small>
+            </label>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="/toolkits/{{ toolkit.id }}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

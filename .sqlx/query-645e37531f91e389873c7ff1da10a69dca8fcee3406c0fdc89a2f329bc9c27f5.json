@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                INSERT INTO pending_registrations (email, password_hash, token, expires_at)\n                VALUES (?, ?, ?, ?)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "645e37531f91e389873c7ff1da10a69dca8fcee3406c0fdc89a2f329bc9c27f5"
+}

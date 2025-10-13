@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO execution_history (\n                server_id, instance_id, tool_id, started_at, completed_at, duration_ms,\n                status, http_status_code, error_message, input_params, response_body,\n                response_headers, request_url, request_method, response_size_bytes, transport\n            )\n            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 16
+    },
+    "nullable": []
+  },
+  "hash": "07d06a76643da8ed97fde6d56b1c24e3498a2d985dff1675cc12c4b2d49f3082"
+}

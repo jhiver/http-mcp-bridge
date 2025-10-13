@@ -1,0 +1,192 @@
+{% extends "base_authenticated.html" %}
+
+{% block title %}Configure Tool Instance - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/servers">My Servers</a> /
+    <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}?tab=tools">{{ server.name }}</a> /
+    Configure {{ tool.name }}
+</div>
+
+<div class="container">
+    <h1>Configure Tool Instance</h1>
+
+    <form method="post" action="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}/instances">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="tool_id" value="{{ tool.id }}">
+
+        <div class="form-group">
+            <label for="instance_name">Instance Name</label>
+            <input type="text" id="instance_name" name="instance_name" required class="form-control"
+                   value="{{ suggested_name }}"
+                   placeholder="e.g., CheckHealthAPI">
+            <small>This is how the tool will appear to LLMs</small>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="3" class="form-control"
+                      placeholder="{% match suggested_description %}{% when Some with (desc) %}{{ desc }}{% when None %}Describe this tool instance...{% endmatch %}">{% match suggested_description %}{% when Some with (desc) %}{{ desc }}{% when None %}{% endmatch %}</textarea>
+            <small>
+                {% match suggested_description %}
+                {% when Some with (desc) %}
+                    Default from tool: "{{ desc }}"
+                {% when None %}
+                    Optional description for this instance
+                {% endmatch %}
+            </small>
+        </div>
+
+        <h2>Parameter Configuration</h2>
+        <p>Configure each parameter: expose it to LLMs, use server default, or set a fixed value.</p>
+
+        {% for param in tool_params %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5>{{ param.name }}
+                    <span class="badge badge-info">{{ param.param_type }}</span>
+                    <span class="badge badge-secondary">{{ param.source }}</span>
+                </h5>
+
+                <div class="form-group">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio"
+                               name="param_{{ param.name }}_source"
+                               id="exposed_{{ param.name }}"
+                               value="exposed"
+                               checked
+                               onchange="updateParamConfig('{{ param.name }}')">
+                        <label class="form-check-label" for="exposed_{{ param.name }}">
+                            <strong>Expose to LLM</strong><br>
+                            <small>LLM can set this parameter when calling the tool</small>
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio"
+                               name="param_{{ param.name }}_source"
+                               id="server_{{ param.name }}"
+                               value="server"
+                               {% if server_globals.contains(param.name) %}
+                               {% else %}disabled{% endif %}
+                               onchange="updateParamConfig('{{ param.name }}')">
+                        <label class="form-check-label" for="server_{{ param.name }}">
+                            <strong>Use Server Default</strong><br>
+                            {% if server_globals.contains(param.name) %}
+                                <small>Server has a default for this parameter</small>
+                            {% else %}
+                                <small>No server default available</small>
+                            {% endif %}
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio"
+                               name="param_{{ param.name }}_source"
+                               id="instance_{{ param.name }}"
+                               value="instance"
+                               onchange="updateParamConfig('{{ param.name }}')">
+                        <label class="form-check-label" for="instance_{{ param.name }}">
+                            <strong>Set at Instance</strong><br>
+                            <small>Provide a fixed value for this instance</small>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" id="value_{{ param.name }}" style="display:none;">
+                    <label>Value for {{ param.name }}:</label>
+                    {% if param.param_type == "boolean" %}
+                        <select name="param_{{ param.name }}_value" class="form-control">
+                            <option value="true">true</option>
+                            <option value="false">false</option>
+                        </select>
+                    {% else if param.param_type == "number" || param.param_type == "integer" %}
+                        <input type="number" name="param_{{ param.name }}_value"
+                               placeholder="Enter {{ param.param_type }}" class="form-control">
+                    {% else %}
+                        <input type="text" name="param_{{ param.name }}_value"
+                               placeholder="Enter value" class="form-control">
+                    {% endif %}
+                    <small>Can use variables: {% raw %}{{type:variable_name}}{% endraw %}</small>
+                </div>
+
+                <input type="hidden" name="param_configs[{{ loop.index0 }}][name]" value="{{ param.name }}">
+                <input type="hidden" name="param_configs[{{ loop.index0 }}][source]" id="config_source_{{ param.name }}" value="exposed">
+                <input type="hidden" name="param_configs[{{ loop.index0 }}][value]" id="config_value_{{ param.name }}" value="">
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <h4>Preview</h4>
+                <p>Tool Signature: <code id="signature-preview">Loading...</code></p>
+                <p id="exposed-params-info"></p>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Create Instance</button>
+        <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+
+<script>
+function updateParamConfig(paramName) {
+    const source = document.querySelector(`input[name="param_${paramName}_source"]:checked`).value;
+    const valueDiv = document.getElementById(`value_${paramName}`);
+    const configSource = document.getElementById(`config_source_${paramName}`);
+    const configValue = document.getElementById(`config_value_${paramName}`);
+
+    valueDiv.style.display = source === 'instance' ? 'block' : 'none';
+    configSource.value = source;
+
+    if (source === 'instance') {
+        const valueInput = valueDiv.querySelector('input, select');
+        if (valueInput) {
+            configValue.value = valueInput.value;
+            valueInput.addEventListener('input', function() {
+                configValue.value = this.value;
+            });
+        }
+    }
+
+    updateSignaturePreview();
+}
+
+function updateSignaturePreview() {
+    const instanceName = document.getElementById('instance_name').value || 'InstanceName';
+    const exposedParams = [];
+
+    document.querySelectorAll('[id^="exposed_"]').forEach(radio => {
+        if (radio.checked) {
+            const paramName = radio.id.replace('exposed_', '');
+            exposedParams.push(paramName);
+        }
+    });
+
+    const signature = exposedParams.length > 0
+        ? `${instanceName}(${exposedParams.join(', ')})`
+        : `${instanceName}()`;
+
+    document.getElementById('signature-preview').textContent = signature;
+
+    const info = document.getElementById('exposed-params-info');
+    if (exposedParams.length === 0) {
+        info.textContent = 'No parameters exposed - tool will run with all pre-configured values.';
+    } else {
+        info.textContent = `${exposedParams.length} parameter(s) will be exposed to the LLM.`;
+    }
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', () => {
+    {% for param in tool_params %}
+    updateParamConfig('{{ param.name }}');
+    {% endfor %}
+    updateSignaturePreview();
+});
+
+document.getElementById('instance_name').addEventListener('input', updateSignaturePreview);
+</script>
+{% endblock %}

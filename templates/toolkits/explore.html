@@ -1,0 +1,253 @@
+{% extends "base_authenticated.html" %}
+
+{% block title %}Discover - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-header">
+        <h1>Discover</h1>
+        <a href="/toolkits" class="btn btn-secondary">← My Toolkits</a>
+    </div>
+
+    <div class="toolbar">
+        <div class="sort-options">
+            <span class="sort-label">Sort by:</span>
+            <a href="/toolkits/explore?sort=popular" class="sort-link {% if current_sort == "popular" %}active{% endif %}">Most Popular</a>
+            <a href="/toolkits/explore?sort=newest" class="sort-link {% if current_sort == "newest" %}active{% endif %}">Newest</a>
+            <a href="/toolkits/explore?sort=most_tools" class="sort-link {% if current_sort == "most_tools" %}active{% endif %}">Most Tools</a>
+        </div>
+    </div>
+
+    {% if toolkits.len() == 0 %}
+    <div class="empty-state">
+        <p>Nothing to discover yet.</p>
+        <p>Be the first to share a toolkit by making yours public!</p>
+        <a href="/toolkits" class="btn btn-primary">Go to My Toolkits</a>
+    </div>
+    {% else %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Owner</th>
+                <th>Tools</th>
+                <th>Clones</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for toolkit in toolkits %}
+            <tr>
+                <td>
+                    <a href="/toolkits/{{ toolkit.id }}/public">{{ toolkit.title }}</a>
+                    {% if toolkit.parent_toolkit_id.is_some() %}
+                    <span class="badge badge-secondary" title="This toolkit was cloned from another">Cloned</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if toolkit.description.is_some() %}
+                        {{ toolkit.description.as_ref().unwrap() }}
+                    {% else %}
+                        <span class="text-muted">No description</span>
+                    {% endif %}
+                </td>
+                <td class="owner-email">{{ toolkit.owner_email }}</td>
+                <td>{{ toolkit.tools_count }}</td>
+                <td>
+                    {% if toolkit.clone_count > 0 %}
+                    <span class="clone-count">{{ toolkit.clone_count }}</span>
+                    {% else %}
+                    <span class="text-muted">0</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="/toolkits/{{ toolkit.id }}/public" class="btn btn-primary btn-sm">View</a>
+                        <form action="/toolkits/{{ toolkit.id }}/clone" method="POST" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="btn btn-success btn-sm">Clone</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+
+<style>
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.sort-options {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.sort-label {
+    font-weight: 600;
+    color: inherit;
+}
+
+.sort-link {
+    color: #6c757d;
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.sort-link:hover {
+    color: #007bff;
+    background-color: rgba(0, 123, 255, 0.15);
+}
+
+.sort-link.active {
+    color: #007bff;
+    background-color: rgba(0, 123, 255, 0.15);
+    font-weight: 600;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.table thead {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: inherit;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.table td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.table a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.table a:hover {
+    text-decoration: underline;
+}
+
+.badge {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 3px;
+    margin-left: 5px;
+}
+
+.badge-secondary {
+    color: #fff;
+    background-color: #6c757d;
+}
+
+.clone-count {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 0.875rem;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+}
+</style>
+
+<script>
+// Anonymize email addresses
+document.addEventListener('DOMContentLoaded', function() {
+    const emailCells = document.querySelectorAll('.owner-email');
+    emailCells.forEach(function(cell) {
+        const email = cell.textContent.trim();
+        if (email && email.includes('@')) {
+            const [localPart, domain] = email.split('@');
+            if (localPart.length > 1) {
+                const anonymized = localPart[0] + '****@' + domain;
+                cell.textContent = anonymized;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

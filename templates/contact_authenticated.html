@@ -1,0 +1,62 @@
+{% extends "base_authenticated.html" %}
+
+{% block title %}Contact Us - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Contact Us</h1>
+</div>
+<p style="margin-bottom: 2rem;">Have a question or feedback? We'd love to hear from you!</p>
+
+{% if !success_message.is_empty() %}
+<div class="alert alert-success">
+    {{ success_message }}
+</div>
+{% endif %}
+
+{% if !error_message.is_empty() %}
+<div class="alert alert-error">
+    {{ error_message }}
+</div>
+{% endif %}
+
+<div class="form-container">
+    <form method="post" action="/contact" data-ajax="true">
+        <div class="form-group">
+            <label for="email">Email Address *</label>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                value="{{ user_email }}"
+            />
+            <small>We'll use this to respond to your message</small>
+        </div>
+
+        <div class="form-group">
+            <label for="name">Name (optional)</label>
+            <input
+                type="text"
+                id="name"
+                name="name"
+            />
+        </div>
+
+        <div class="form-group">
+            <label for="message">Message *</label>
+            <textarea
+                id="message"
+                name="message"
+                rows="8"
+                required
+                placeholder="Tell us what's on your mind..."
+            ></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Send Message</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

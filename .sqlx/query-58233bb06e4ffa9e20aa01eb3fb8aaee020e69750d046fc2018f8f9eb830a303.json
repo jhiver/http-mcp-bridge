@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE tool_instances\n            SET instance_name = ?, description = ?, updated_at = unixepoch()\n            WHERE id = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "58233bb06e4ffa9e20aa01eb3fb8aaee020e69750d046fc2018f8f9eb830a303"
+}

@@ -1,0 +1,761 @@
+{% extends "base_authenticated.html" %}
+
+{% block title %}{{ server.name }} - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/servers">My Servers</a> / {{ server.name }}
+</div>
+
+<div class="page-header">
+    <div>
+        <h1>{{ server.name }}</h1>
+        {% match server.description %}
+        {% when Some with (desc) %}
+            <p class="text-dim">{{ desc }}</p>
+        {% when None %}
+        {% endmatch %}
+    </div>
+    <div class="actions">
+        <form method="post" action="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}/delete" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="btn btn-small btn-danger" onclick="return confirm('Delete server?')">Delete</button>
+        </form>
+    </div>
+</div>
+
+<div class="tabs">
+    <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}?tab=server" class="tab-btn {% if active_tab == "server" %}active{% endif %}">Server</a>
+    <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}?tab=toolkits" class="tab-btn {% if active_tab == "toolkits" %}active{% endif %}">Toolkits</a>
+    <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}?tab=tools" class="tab-btn {% if active_tab == "tools" %}active{% endif %}">Tools</a>
+    <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}?tab=bindings" class="tab-btn {% if active_tab == "bindings" %}active{% endif %}">Bindings</a>
+    <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}?tab=metadata" class="tab-btn {% if active_tab == "metadata" %}active{% endif %}">Metadata</a>
+    <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}?tab=settings" class="tab-btn {% if active_tab == "settings" %}active{% endif %}">Settings</a>
+</div>
+
+<!-- Tab Content: Server -->
+<div id="server" class="tab-content {% if active_tab == "server" %}active{% endif %}">
+    <h2>Connection Information</h2>
+    <p class="muted" style="margin-bottom: 2rem;">
+        Use these URLs and commands to connect to your MCP server.
+    </p>
+
+    <table class="table connection-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>URL / Command</th>
+                <th style="width: 60px;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>SSE Endpoint (Subdomain) <span class="badge-new">NEW</span></td>
+                <td>
+                    <code class="url-code" id="mcp-url"></code>
+                </td>
+                <td>
+                    <button class="copy-btn" onclick="copyToClipboard('mcp-url', event.target)" title="Copy">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5.5 4.5v-2a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-2m-6 0h-3a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3m0 0h3a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td>Streamable HTTP</td>
+                <td><code class="url-code" id="http-url"></code></td>
+                <td>
+                    <button class="copy-btn" onclick="copyToClipboard('http-url', event.target)" title="Copy">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5.5 4.5v-2a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-2m-6 0h-3a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3m0 0h3a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td>Claude Code</td>
+                <td><code class="url-code" id="claude-cmd-http"></code></td>
+                <td>
+                    <button class="copy-btn" onclick="copyToClipboard('claude-cmd-http', event.target)" title="Copy">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5.5 4.5v-2a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-2m-6 0h-3a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3m0 0h3a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        const serverName = '{{ server.name }}'.toLowerCase().replace(/\s+/g, '-');
+        const baseUrl = window.location.origin;
+        const serverUuid = '{{ server.uuid }}';
+
+        // Extract domain from baseUrl (e.g., "https://saramcp.com" -> "saramcp.com")
+        const domain = baseUrl.replace(/^https?:\/\//, '').split(':')[0];
+        const subdomainUrl = `https://${serverUuid}.${domain}`;
+        const legacyHttpUrl = `${baseUrl}/s/${serverUuid}`;
+
+        const connections = {
+            'mcp-url': subdomainUrl,
+            'http-url': legacyHttpUrl,
+            'claude-cmd-http': `claude mcp add-json ${serverName} '{"type":"http","url":"${legacyHttpUrl}"}'`
+        };
+
+        // Populate URLs
+        for (const [id, value] of Object.entries(connections)) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        }
+
+        function copyToClipboard(elementId, button) {
+            const text = connections[elementId];
+            navigator.clipboard.writeText(text).then(() => {
+                showCopyFeedback(button.closest('button'));
+            });
+        }
+
+        function showCopyFeedback(button) {
+            const svg = button.querySelector('svg');
+            const originalColor = button.style.color;
+            button.style.color = 'var(--success, #28a745)';
+            svg.innerHTML = '<path d="M13.5 4.5l-6 6-3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+            setTimeout(() => {
+                button.style.color = originalColor;
+                svg.innerHTML = '<path d="M5.5 4.5v-2a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-2m-6 0h-3a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3m0 0h3a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+            }, 1500);
+        }
+    </script>
+</div>
+
+<!-- Tab Content: Toolkits -->
+<div id="toolkits" class="tab-content {% if active_tab == "toolkits" %}active{% endif %}">
+    <div class="tools-two-column">
+        <!-- Left Column: Available Toolkits -->
+        <div class="tools-column">
+            <h2>Available</h2>
+            {% if available_toolkits.is_empty() %}
+                <p class="empty">All your toolkits are already installed. <a href="/toolkits">Create a new toolkit</a> to add more.</p>
+            {% else %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Toolkit</th>
+                            <th>Description</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for toolkit in available_toolkits %}
+                        <tr>
+                            <td>{{ toolkit.title }}</td>
+                            <td>
+                                {% match toolkit.description %}
+                                {% when Some with (desc) %}
+                                    {{ desc }}
+                                {% when None %}
+                                    <span class="muted">—</span>
+                                {% endmatch %}
+                            </td>
+                            <td>
+                                <form method="post" action="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}/install-toolkit" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="toolkit_id" value="{{ toolkit.id }}">
+                                    <button type="submit" class="btn-icon" title="Install">&gt;&gt;</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+
+        <!-- Right Column: Installed Toolkits -->
+        <div class="tools-column">
+            <h2>Installed</h2>
+            {% if installed_toolkits.is_empty() %}
+                <p class="empty">No toolkits installed.</p>
+            {% else %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Toolkit</th>
+                            <th>Description</th>
+                            <th>Tools</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for toolkit in installed_toolkits %}
+                        <tr>
+                            <td>
+                                <a href="/toolkits/{% match toolkit.toolkit_id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}">
+                                    {{ toolkit.title }}
+                                </a>
+                            </td>
+                            <td>
+                                {% match toolkit.description %}
+                                {% when Some with (desc) %}
+                                    {{ desc }}
+                                {% when None %}
+                                    <span class="muted">—</span>
+                                {% endmatch %}
+                            </td>
+                            <td>
+                                <span class="muted">
+                                    {{ toolkit.tools_count }}
+                                </span>
+                            </td>
+                            <td></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Tab Content: Tools -->
+<div id="tools" class="tab-content {% if active_tab == "tools" %}active{% endif %}">
+    <div class="tools-two-column">
+        <!-- Left Column: Available Tools -->
+        <div class="tools-column">
+            <h2>Available</h2>
+            {% if available_tools.is_empty() %}
+                <p class="empty">All tools have instances.</p>
+            {% else %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tool</th>
+                            <th>Toolkit</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tool in available_tools %}
+                        <tr>
+                            <td>
+                                <span {% match tool.tool_description %}{% when Some with (desc) %}title="{{ desc }}"{% when None %}{% endmatch %} class="tool-name-tooltip">
+                                    {{ tool.tool_name }}
+                                </span>
+                            </td>
+                            <td>{{ tool.toolkit_title }}</td>
+                            <td>
+                                <form method="post" action="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}/instances" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="tool_id" value="{{ tool.tool_id }}">
+                                    <input type="hidden" name="instance_name" value="{{ tool.tool_name }}">
+                                    <button type="submit" class="btn-icon" title="Create Instance">&gt;&gt;</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+
+        <!-- Right Column: Installed Instances -->
+        <div class="tools-column">
+            <h2>Installed</h2>
+            {% if instances.is_empty() %}
+                <p class="empty">No tool instances configured.</p>
+            {% else %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Instance Name</th>
+                            <th>Tool</th>
+                            <th>Toolkit</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for instance in instances %}
+                        <tr>
+                            <td>
+                                <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}/instances/{{ instance.id }}" {% match instance.description %}{% when Some with (desc) %}title="{{ desc }}"{% when None %}{% endmatch %} class="tool-name-tooltip">
+                                    {{ instance.instance_name }}
+                                </a>
+                            </td>
+                            <td>{{ instance.tool_name }}</td>
+                            <td>{{ instance.toolkit_name }}</td>
+                            <td>
+                                <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}/instances/{{ instance.id }}/test" class="btn-icon" title="Test">⚡</a>
+                                <form method="post" action="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}/instances/{{ instance.id }}/delete" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <button type="submit" class="btn-icon btn-icon-danger" onclick="return confirm('Delete instance?')" title="Delete">✕</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Tab Content: Bindings -->
+<div id="bindings" class="tab-content {% if active_tab == "bindings" %}active{% endif %}">
+    <h2>Global Variables & Secrets</h2>
+    <p class="muted" style="margin-bottom: 1.5rem;">
+        Configure parameters discovered from tool instances. Variables are bound at the server level.
+    </p>
+
+    {% if bindings.is_empty() %}
+        <p class="empty">No parameters discovered. Add tool instances to see parameters here.</p>
+    {% else %}
+        <form method="post" action="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}/bindings">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <table class="table bindings-table">
+                <thead>
+                    <tr>
+                        <th>Parameter Name</th>
+                        <th>Type</th>
+                        <th>Usage Count</th>
+                        <th>Secret</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for binding in bindings %}
+                    <tr>
+                        <td><code>{{ binding.param_name }}</code></td>
+                        <td><span class="badge">{{ binding.param_type }}</span></td>
+                        <td>{{ binding.usage_count }}</td>
+                        <td>
+                            <input type="hidden" name="keys" value="{{ binding.param_name }}">
+                            <input type="checkbox" name="is_secret" value="{{ binding.param_name }}" {% if binding.is_secret %}checked{% endif %} onchange="toggleSecretInput(this)">
+                        </td>
+                        <td>
+                            <input type="{% if binding.is_secret %}password{% else %}text{% endif %}" name="values" value="{% match binding.current_value %}{% when Some with (val) %}{{ val }}{% when None %}{% endmatch %}" placeholder="Enter value" class="value-input">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div style="margin-top: 1.5rem;">
+                <button type="submit" class="btn">Save Bindings</button>
+            </div>
+        </form>
+
+        <script>
+        function toggleSecretInput(checkbox) {
+            const row = checkbox.closest('tr');
+            const input = row.querySelector('.value-input');
+            input.type = checkbox.checked ? 'password' : 'text';
+        }
+        </script>
+    {% endif %}
+</div>
+
+<!-- Tab Content: Metadata -->
+<div id="metadata" class="tab-content {% if active_tab == "metadata" %}active{% endif %}">
+    <h2>Server Metadata</h2>
+    <form method="post" action="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-group">
+            <label for="name">Server Name</label>
+            <input type="text" id="name" name="name" value="{{ server.name }}" required class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="3" class="form-control">{% match server.description %}{% when Some with (desc) %}{{ desc }}{% when None %}{% endmatch %}</textarea>
+        </div>
+
+        <button type="submit" class="btn">Save Changes</button>
+    </form>
+</div>
+
+<!-- Tab Content: Settings -->
+<div id="settings" class="tab-content {% if active_tab == "settings" %}active{% endif %}">
+    <h2>Server Settings</h2>
+
+    <form method="post" action="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}/access">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-group">
+            <label for="access_level">Access Level</label>
+            <select name="access_level" id="access_level" class="form-control">
+                <option value="private"
+                    {% match server.access_level %}
+                    {% when Some with (level) %}
+                        {% if level == "private" %}selected{% endif %}
+                    {% when None %}
+                        selected
+                    {% endmatch %}>
+                    Private (OAuth required) - Only you can access this server
+                </option>
+                <option value="organization"
+                    {% match server.access_level %}
+                    {% when Some with (level) %}
+                        {% if level == "organization" %}selected{% endif %}
+                    {% when None %}
+                    {% endmatch %}>
+                    Authenticated - Any SaraMCP user can access
+                </option>
+                <option value="public"
+                    {% match server.access_level %}
+                    {% when Some with (level) %}
+                        {% if level == "public" %}selected{% endif %}
+                    {% when None %}
+                    {% endmatch %}>
+                    Public - Anyone can access (no authentication)
+                </option>
+            </select>
+            <small class="text-muted" style="display: block; margin-top: 0.5rem;">
+                ✅ <strong>Access control is now active.</strong> This setting controls who can access your MCP server.
+            </small>
+        </div>
+
+        <button type="submit" class="btn">Save Settings</button>
+    </form>
+
+    <!-- OAuth Information Section -->
+    <div id="oauth-section" style="margin-top: 2rem; padding: 1rem; background-color: var(--light-bg); border: 1px solid var(--border); border-radius: 0.25rem;">
+        <h3 id="oauth-title" style="color: var(--text-bright); margin-top: 0; font-size: 1rem;">OAuth Authentication Required</h3>
+        <p id="oauth-description" style="color: var(--text-dim); margin-bottom: 1rem; font-size: 0.875rem;">
+            This server requires OAuth 2.1 authentication. Clients must obtain an access token before connecting.
+        </p>
+
+        <div id="oauth-endpoint" style="background-color: var(--bg); padding: 0.75rem; border-radius: 0.25rem; border: 1px solid var(--border); margin-bottom: 1rem;">
+            <p style="margin: 0 0 0.25rem 0; font-size: 0.75rem; color: var(--text-dim);">MCP Endpoint:</p>
+            <code style="font-size: 0.875rem; background-color: var(--light-bg); padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block; color: var(--primary);">
+                http://localhost:8080/s/{{ server.uuid }}
+            </code>
+        </div>
+
+        <details id="oauth-details" style="font-size: 0.875rem;">
+            <summary style="cursor: pointer; color: var(--primary); font-weight: 500; margin-bottom: 0.5rem;">
+                View OAuth Configuration Steps
+            </summary>
+            <ol style="margin: 0.75rem 0 0 1.5rem; padding: 0; color: var(--fg); line-height: 1.75;">
+                <li style="margin-bottom: 0.5rem;">
+                    <strong>Register OAuth client:</strong><br>
+                    <code style="background-color: var(--light-bg); padding: 0.125rem 0.25rem; border-radius: 0.25rem; color: var(--primary);">POST http://localhost:8080/.oauth/register</code>
+                </li>
+                <li style="margin-bottom: 0.5rem;">
+                    <strong>Get authorization code:</strong><br>
+                    <code style="background-color: var(--light-bg); padding: 0.125rem 0.25rem; border-radius: 0.25rem; color: var(--primary);">GET http://localhost:8080/.oauth/authorize</code>
+                </li>
+                <li style="margin-bottom: 0.5rem;">
+                    <strong>Exchange for access token:</strong><br>
+                    <code style="background-color: var(--light-bg); padding: 0.125rem 0.25rem; border-radius: 0.25rem; color: var(--primary);">POST http://localhost:8080/.oauth/token</code>
+                </li>
+                <li style="margin-bottom: 0.5rem;">
+                    <strong>Include token in requests:</strong><br>
+                    <code style="background-color: var(--light-bg); padding: 0.125rem 0.25rem; border-radius: 0.25rem; color: var(--primary);">Authorization: Bearer &lt;token&gt;</code>
+                </li>
+            </ol>
+            <a href="/.well-known/oauth-authorization-server" target="_blank"
+               style="display: inline-block; margin-top: 0.75rem; color: var(--primary);">
+                View OAuth Server Metadata →
+            </a>
+        </details>
+    </div>
+
+    <script>
+    // Update OAuth section based on access level
+    function updateOAuthSection() {
+        const accessLevel = document.getElementById('access_level').value;
+        const oauthSection = document.getElementById('oauth-section');
+        const oauthTitle = document.getElementById('oauth-title');
+        const oauthDescription = document.getElementById('oauth-description');
+        const oauthEndpoint = document.getElementById('oauth-endpoint');
+        const oauthDetails = document.getElementById('oauth-details');
+
+        if (accessLevel === 'public') {
+            oauthTitle.textContent = 'Public Endpoint';
+            oauthDescription.textContent = 'This server is publicly accessible without authentication. Anyone can connect.';
+            oauthEndpoint.style.display = 'block';
+            oauthDetails.style.display = 'none';
+        } else {
+            oauthTitle.textContent = 'OAuth Authentication Required';
+            oauthDescription.textContent = 'This server requires OAuth 2.1 authentication. Clients must obtain an access token before connecting.';
+            oauthEndpoint.style.display = 'block';
+            oauthDetails.style.display = 'block';
+        }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', updateOAuthSection);
+
+    // Update when access level changes
+    document.getElementById('access_level').addEventListener('change', updateOAuthSection);
+    </script>
+</div>
+
+<style>
+.connection-table {
+    width: 100%;
+}
+
+.connection-table td code.url-code {
+    background: var(--light-bg);
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: var(--primary);
+    border: 1px solid var(--border);
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.connection-table .copy-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 0.4rem 0.5rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.connection-table .copy-btn:hover {
+    background: var(--light-bg);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.connection-table .copy-btn svg {
+    display: block;
+}
+
+.tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 2rem;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1rem;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.tab-btn:hover {
+    color: var(--fg);
+    background: var(--light-bg);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.toolkit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.toolkit-card {
+    background: var(--light-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+
+.toolkit-card:hover {
+    border-color: var(--primary);
+}
+
+.toolkit-card .card-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.toolkit-card .card-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.toolkit-card .card-header h3 a {
+    color: var(--text-bright);
+}
+
+.toolkit-card .card-body {
+    padding: 1rem 1.5rem;
+}
+
+.toolkit-card .card-body p {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.toolkit-card .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.bindings-table input[type="text"],
+.bindings-table input[type="password"] {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--fg);
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    background: var(--primary);
+    color: var(--bg);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-new {
+    display: inline-block;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    background: var(--success, #28a745);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-left: 0.5rem;
+}
+
+.btn-secondary {
+    background: var(--light-bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+    background: var(--border);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-bright);
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.tools-two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.tools-column h2 {
+    margin-bottom: 1rem;
+}
+
+.btn-icon {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--primary);
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-icon:hover {
+    background: var(--primary);
+    color: var(--bg);
+    border-color: var(--primary);
+}
+
+.btn-icon-danger {
+    background: transparent;
+    color: var(--error);
+    border-color: var(--error);
+}
+
+.btn-icon-danger:hover {
+    background: var(--error);
+    color: var(--bg);
+    border-color: var(--error);
+}
+
+.tool-name-tooltip {
+    cursor: help;
+    border-bottom: 1px dotted var(--text-dim);
+}
+
+.tool-name-tooltip:hover {
+    border-bottom-color: var(--fg);
+}
+
+a.tool-name-tooltip {
+    text-decoration: none;
+}
+
+a.tool-name-tooltip:hover {
+    border-bottom-style: solid;
+}
+</style>
+{% endblock %}

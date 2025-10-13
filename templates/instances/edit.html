@@ -1,0 +1,523 @@
+{% extends "base_authenticated.html" %}
+
+{% block title %}Edit Instance - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/servers">My Servers</a> /
+    <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}?tab=tools">{{ server.name }}</a> /
+    Edit {{ instance.instance_name }}
+</div>
+
+<div class="container">
+    <h1>Edit Instance: {{ instance.instance_name }}</h1>
+
+    <div class="signature-box">
+        <strong>Tool Definition:</strong> <code>{{ signature }}</code>
+    </div>
+
+    <div class="tabs">
+        <button type="button" class="tab-btn active" onclick="switchTab('parameters')">Parameters</button>
+        <button type="button" class="tab-btn" onclick="switchTab('metadata')">Metadata</button>
+        <button type="button" class="tab-btn" onclick="switchTab('test')">Test</button>
+    </div>
+
+    <form method="post" action="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}/instances/{{ instance.id }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="tool_id" value="{{ instance.tool_id }}">
+
+        <!-- Tab Content: Metadata -->
+        <div id="metadata-tab" class="tab-content">
+            <h2>Instance Information</h2>
+
+            <div class="form-group">
+                <label for="instance_name">Instance Name</label>
+                <input type="text" id="instance_name" name="instance_name" value="{{ instance.instance_name }}"
+                       required>
+                <p class="form-help">The name used to call this tool instance</p>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="3" placeholder="{% match instance.tool_description %}{% when Some with (desc) %}{{ desc }}{% when None %}Describe this tool instance...{% endmatch %}">{% match instance.description %}{% when Some with (desc) %}{{ desc }}{% when None %}{% endmatch %}</textarea>
+                <p class="form-help">
+                    {% match instance.tool_description %}
+                    {% when Some with (desc) %}
+                        Default from tool: "{{ desc }}"
+                    {% when None %}
+                        Optional description for this instance
+                    {% endmatch %}
+                </p>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}?tab=tools" class="btn btn-secondary">Cancel</a>
+            </div>
+        </div>
+
+        <!-- Tab Content: Parameters -->
+        <div id="parameters-tab" class="tab-content active">
+            <h2>Parameter Configuration</h2>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Parameter Name</th>
+                        <th>Type</th>
+                        <th>Server Binding</th>
+                        <th>Binding</th>
+                        <th>Status</th>
+                        <th>Final Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for param in params_with_config %}
+                    <tr data-param="{{ param.name }}" data-server-binding="{% match param.server_binding %}{% when Some with (value) %}{{ value }}{% when None %}{% endmatch %}">
+                        <td><strong>{{ param.name }}</strong><br><span class="text-dim" style="font-size: 0.85em;">{{ param.source }}</span></td>
+                        <td>{{ param.param_type }}</td>
+                        <td>
+                            {% match param.server_binding %}
+                            {% when Some with (value) %}
+                                {{ value }}
+                            {% when None %}
+                                <em class="text-dim">(none)</em>
+                            {% endmatch %}
+                        </td>
+                        <td>
+                            <input type="text" name="param_{{ param.name }}_value" id="input_{{ param.name }}"
+                                   value="{% match param.config_value %}{% when Some with (value) %}{{ value }}{% when None %}{% endmatch %}"
+                                   class="binding-input" placeholder="Enter value..."
+                                   oninput="updateParamConfig('{{ param.name }}')">
+                        </td>
+                        <td>
+                            <span id="binding_label_{{ param.name }}" class="binding-label {% if param.config_source == "instance" || param.config_source == "server" %}binding-label-instance{% else %}binding-label-exposed{% endif %}">
+                                {% if param.config_source == "instance" || param.config_source == "server" %}
+                                    Bound
+                                {% else %}
+                                    Exposed
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span id="final_{{ param.name }}">
+                            {% match param.final_value %}
+                            {% when Some with (value) %}
+                                {{ value }}
+                            {% when None %}
+                                <em class="text-dim">(none)</em>
+                            {% endmatch %}
+                            </span>
+                        </td>
+                    </tr>
+                    <input type="hidden" name="param_configs[{{ loop.index0 }}][name]" value="{{ param.name }}">
+                    <input type="hidden" name="param_configs[{{ loop.index0 }}][source]" id="config_source_{{ param.name }}"
+                           value="{{ param.config_source }}">
+                    <input type="hidden" name="param_configs[{{ loop.index0 }}][value]" id="config_value_{{ param.name }}"
+                           value="{% match param.config_value %}{% when Some with (value) %}{{ value }}{% when None %}{% endmatch %}">
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div style="margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}?tab=tools" class="btn btn-secondary">Cancel</a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Tab Content: Test -->
+    <div id="test-tab" class="tab-content">
+        <h2>Test Instance</h2>
+        <p class="text-dim" style="margin-bottom: 1.5rem;">
+            Test this instance with exposed parameters. Instance and server-level parameters are already configured.
+        </p>
+
+        <!-- Debug: Show all params -->
+        <details style="margin-bottom: 1rem;">
+            <summary style="cursor: pointer; color: var(--text-dim); font-size: 0.9em;">Debug: View all parameters</summary>
+            <pre style="background: var(--bg); padding: 1rem; border-radius: 4px; font-size: 0.85em;">{% for param in params_with_config %}{{ param.name }}: config_source={{ param.config_source }}, param_type={{ param.param_type }}
+{% endfor %}</pre>
+        </details>
+
+        <form method="post" action="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}/instances/{{ instance.id }}/test" target="_blank" class="test-form-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            {% for param in params_with_config %}
+            {% if param.config_source == "exposed" %}
+            <div class="form-group">
+                <label for="test_param_{{ param.name }}">
+                    {{ param.name }}
+                    <span class="type-badge">{{ param.param_type }}</span>
+                </label>
+
+                {% if param.param_type == "boolean" %}
+                    <input type="hidden" name="{{ param.name }}" value="false">
+                    <input type="checkbox" id="test_param_{{ param.name }}" name="{{ param.name }}" value="true">
+                    <small>Check for true, uncheck for false</small>
+                {% else if param.param_type == "integer" %}
+                    <input type="number" id="test_param_{{ param.name }}" name="{{ param.name }}" step="1" required placeholder="Enter integer value">
+                {% else if param.param_type == "number" %}
+                    <input type="number" id="test_param_{{ param.name }}" name="{{ param.name }}" step="any" required placeholder="Enter numeric value">
+                {% else if param.param_type == "url" %}
+                    <input type="url" id="test_param_{{ param.name }}" name="{{ param.name }}" required placeholder="https://example.com">
+                {% else if param.param_type == "json" %}
+                    <textarea id="test_param_{{ param.name }}" name="{{ param.name }}" rows="4" required style="font-family: monospace" placeholder='{"key": "value"}'></textarea>
+                    <small>Enter valid JSON</small>
+                {% else %}
+                    <input type="text" id="test_param_{{ param.name }}" name="{{ param.name }}" required placeholder="Enter {{ param.param_type }} value">
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+
+            <div style="margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-primary">Execute Test</button>
+                <p class="text-dim" style="font-size: 0.85em; margin-top: 0.5rem;">
+                    {% for param in params_with_config %}
+                        {% if param.config_source != "exposed" %}
+                            {{ param.name }} is configured as {{ param.config_source }}{% if !loop.last %}, {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 2rem;
+    margin-top: 1.5rem;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1rem;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+
+.tab-btn:hover {
+    color: var(--fg);
+    background: var(--light-bg);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.signature-box {
+    background: var(--light-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem;
+    margin: 1.5rem 0;
+}
+
+.signature-box code {
+    background: var(--bg);
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    color: var(--primary);
+}
+
+.text-dim {
+    color: var(--text-dim);
+}
+
+.form-help {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+}
+
+.radio-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.radio-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0;
+    cursor: pointer;
+}
+
+.radio-inline input[type="radio"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.radio-inline input[type="radio"]:disabled {
+    cursor: not-allowed;
+}
+
+/* Modern binding input styling */
+.binding-input {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--accent);
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.binding-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: var(--light-bg);
+    box-shadow: 0 0 0 3px rgba(86, 156, 214, 0.1);
+}
+
+.binding-input:hover:not(:focus) {
+    border-color: var(--text-dim);
+}
+
+.binding-input::placeholder {
+    color: var(--text-dim);
+    opacity: 0.5;
+}
+
+.binding-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.375rem 0.75rem;
+    border-radius: 3px;
+    width: fit-content;
+}
+
+.binding-label-exposed {
+    background: rgba(156, 220, 254, 0.1);
+    color: var(--accent);
+    border: 1px solid rgba(156, 220, 254, 0.2);
+}
+
+.binding-label-instance {
+    background: rgba(86, 156, 214, 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(86, 156, 214, 0.2);
+}
+
+.table td {
+    vertical-align: top;
+}
+
+.test-form-inline {
+    background: var(--light-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.5rem;
+    max-width: 600px;
+}
+
+.test-form-inline .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.test-form-inline label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-bright);
+    font-weight: 500;
+}
+
+.test-form-inline input[type="text"],
+.test-form-inline input[type="number"],
+.test-form-inline input[type="url"],
+.test-form-inline textarea {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.test-form-inline input[type="text"]:focus,
+.test-form-inline input[type="number"]:focus,
+.test-form-inline input[type="url"]:focus,
+.test-form-inline textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(86, 156, 214, 0.1);
+}
+
+.test-form-inline small {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+}
+
+.type-badge {
+    display: inline-block;
+    padding: 0.15rem 0.4rem;
+    background: #6c757d;
+    color: white;
+    border-radius: 3px;
+    font-size: 0.75em;
+    font-weight: 500;
+    margin-left: 0.5rem;
+}
+
+.info {
+    background: rgba(86, 156, 214, 0.1);
+    border: 1px solid var(--primary);
+    border-radius: 4px;
+    padding: 1rem;
+    margin: 1rem 0;
+    color: var(--primary);
+}
+</style>
+
+<script>
+// Tab switching functionality
+function switchTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Show selected tab content
+    const tabContent = document.getElementById(`${tabName}-tab`);
+    if (tabContent) {
+        tabContent.classList.add('active');
+    }
+
+    // Add active class to clicked button
+    event.target.classList.add('active');
+}
+
+// Update tool definition based on exposed parameters
+function updateToolDefinition() {
+    const instanceName = document.getElementById('instance_name').value || 'Tool';
+    const exposedParams = [];
+
+    // Find all rows and check which parameters are exposed
+    document.querySelectorAll('tr[data-param]').forEach(row => {
+        const paramName = row.getAttribute('data-param');
+        const configSource = document.getElementById(`config_source_${paramName}`);
+        if (configSource && configSource.value === 'exposed') {
+            exposedParams.push(paramName);
+        }
+    });
+
+    // Update signature display
+    const signatureCode = document.querySelector('.signature-box code');
+    if (signatureCode) {
+        if (exposedParams.length === 0) {
+            signatureCode.textContent = `${instanceName}()`;
+        } else {
+            signatureCode.textContent = `${instanceName}(${exposedParams.join(', ')})`;
+        }
+    }
+}
+
+// Determine binding type based on values
+function determineBinding(instanceValue, serverBinding) {
+    // If instance value is set, use instance binding
+    if (instanceValue && instanceValue.trim()) {
+        return 'instance';
+    }
+    // If server binding is available, use server binding
+    if (serverBinding && serverBinding.trim()) {
+        return 'server';
+    }
+    // Otherwise, expose to LLM
+    return 'exposed';
+}
+
+// Update parameter configuration and final value
+function updateParamConfig(paramName) {
+    const row = document.querySelector(`tr[data-param="${paramName}"]`);
+    const valueInput = document.getElementById(`input_${paramName}`);
+    const configSource = document.getElementById(`config_source_${paramName}`);
+    const configValue = document.getElementById(`config_value_${paramName}`);
+    const finalSpan = document.getElementById(`final_${paramName}`);
+    const bindingLabel = document.getElementById(`binding_label_${paramName}`);
+
+    const instanceValue = valueInput ? valueInput.value.trim() : '';
+    const serverBinding = row.getAttribute('data-server-binding');
+
+    // Determine binding type automatically
+    const source = determineBinding(instanceValue, serverBinding);
+
+    // Update hidden fields
+    configSource.value = source;
+    configValue.value = instanceValue;
+
+    // Update binding label and styling
+    bindingLabel.className = 'binding-label';
+    if (source === 'instance' || source === 'server') {
+        bindingLabel.textContent = 'Bound';
+        bindingLabel.classList.add('binding-label-instance');
+    } else {
+        bindingLabel.textContent = 'Exposed';
+        bindingLabel.classList.add('binding-label-exposed');
+    }
+
+    // Update final value display
+    if (source === 'instance') {
+        finalSpan.textContent = instanceValue;
+    } else if (source === 'server') {
+        if (serverBinding) {
+            finalSpan.textContent = serverBinding;
+        } else {
+            finalSpan.innerHTML = '<em class="text-dim">(none)</em>';
+        }
+    } else {
+        finalSpan.innerHTML = '<em class="text-dim">(none)</em>';
+    }
+
+    // Update tool definition
+    updateToolDefinition();
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Update tool definition when instance name changes
+    const instanceNameInput = document.getElementById('instance_name');
+    if (instanceNameInput) {
+        instanceNameInput.addEventListener('input', updateToolDefinition);
+    }
+});
+</script>
+{% endblock %}

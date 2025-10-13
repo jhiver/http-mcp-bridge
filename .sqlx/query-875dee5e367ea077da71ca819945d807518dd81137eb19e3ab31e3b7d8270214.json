@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT DISTINCT t.id as id\n            FROM server_toolkits st\n            JOIN toolkits tk ON st.toolkit_id = tk.id\n            JOIN tools t ON tk.id = t.toolkit_id\n            WHERE st.server_id = ?\n            ORDER BY tk.title, t.name\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "875dee5e367ea077da71ca819945d807518dd81137eb19e3ab31e3b7d8270214"
+}

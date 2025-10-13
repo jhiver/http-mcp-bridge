@@ -1,0 +1,23 @@
+services:
+  saramcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: saramcp
+    ports:
+      - "3012:8080"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=sqlite:///app/data/saramcp.db
+      - HOST=0.0.0.0
+      - PORT=8080
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    networks:
+      - saramcp-network
+
+networks:
+  saramcp-network:
+    driver: bridge

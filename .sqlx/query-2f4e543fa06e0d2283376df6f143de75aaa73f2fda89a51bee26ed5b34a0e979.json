@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM magic_login_tokens WHERE expires_at < ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "2f4e543fa06e0d2283376df6f143de75aaa73f2fda89a51bee26ed5b34a0e979"
+}

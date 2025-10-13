@@ -1,0 +1,26 @@
+{% extends "base_authenticated.html" %}
+
+{% block title %}New Server - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Create New Server</h1>
+
+    <form method="post" action="/servers">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-group">
+            <label for="name">Server Name</label>
+            <input type="text" id="name" name="name" required class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="3" class="form-control"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Create Server</button>
+        <a href="/servers" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Invalid Link - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="auth-container" style="text-align: center;">
+    <h1>❌ Invalid or Expired Link</h1>
+
+    <p class="lead" style="font-size: 18px; margin: 20px 0; color: #d32f2f;">
+        {{ error }}
+    </p>
+
+    <p style="margin: 30px 0; color: #666;">
+        The link you clicked may have expired or is invalid.<br>
+        Please request a new verification or login link.
+    </p>
+
+    <p style="margin-top: 40px;">
+        <a href="/" class="btn btn-primary">Try Again</a>
+    </p>
+</div>
+{% endblock %}

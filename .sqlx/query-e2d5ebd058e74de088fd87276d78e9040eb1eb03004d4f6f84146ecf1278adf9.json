@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                UPDATE instance_params\n                SET source = ?, value = ?\n                WHERE instance_id = ? AND param_name = ?\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "e2d5ebd058e74de088fd87276d78e9040eb1eb03004d4f6f84146ecf1278adf9"
+}

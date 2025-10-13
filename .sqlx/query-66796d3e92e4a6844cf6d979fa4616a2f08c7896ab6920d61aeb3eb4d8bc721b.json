@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE toolkits\n            SET title = ?, description = ?, visibility = ?, updated_at = unixepoch()\n            WHERE id = ? AND user_id = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "66796d3e92e4a6844cf6d979fa4616a2f08c7896ab6920d61aeb3eb4d8bc721b"
+}

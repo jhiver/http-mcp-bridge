@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO toolkits (user_id, title, description, visibility)\n            VALUES (?, ?, ?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "0a76d2470291e3321650c7ca7153dc89590c446ab1bff8e536e56b5b813bad28"
+}

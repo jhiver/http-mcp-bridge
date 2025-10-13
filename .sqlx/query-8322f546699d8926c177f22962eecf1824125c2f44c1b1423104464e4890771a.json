@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE toolkits\n            SET clone_count = COALESCE(clone_count, 0) + 1\n            WHERE id = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "8322f546699d8926c177f22962eecf1824125c2f44c1b1423104464e4890771a"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO tools (toolkit_id, name, description, method, url, headers, body, timeout_ms)\n            SELECT ?, name, description, method, url, headers, body, timeout_ms\n            FROM tools\n            WHERE toolkit_id = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "ab1be6b6e8b91164357b7a16d2e854f63cb9530c9b0974a8b5ce4135b0f017bf"
+}

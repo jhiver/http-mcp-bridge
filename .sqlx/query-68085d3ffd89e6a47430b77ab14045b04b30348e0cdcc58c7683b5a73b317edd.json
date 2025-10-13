@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT\n                t.id, t.user_id, t.title, t.description, t.visibility,\n                t.parent_toolkit_id, t.clone_count, t.created_at,\n                u.email as owner_email,\n                CAST(COUNT(DISTINCT tl.id) AS INTEGER) as \"tools_count!: i64\"\n            FROM toolkits t\n            LEFT JOIN tools tl ON t.id = tl.toolkit_id\n            LEFT JOIN users u ON t.user_id = u.id\n            WHERE t.visibility = 'public'\n            GROUP BY t.id, t.user_id, t.title, t.description, t.visibility,\n                     t.parent_toolkit_id, t.clone_count, t.created_at, u.email\n            ORDER BY t.clone_count DESC, t.created_at DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "title",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "description",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "visibility",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "parent_toolkit_id",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "clone_count",
+        "ordinal": 6,
+        "type_info": "Integer"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 7,
+        "type_info": "Integer"
+      },
+      {
+        "name": "owner_email",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "tools_count!: i64",
+        "ordinal": 9,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "68085d3ffd89e6a47430b77ab14045b04b30348e0cdcc58c7683b5a73b317edd"
+}

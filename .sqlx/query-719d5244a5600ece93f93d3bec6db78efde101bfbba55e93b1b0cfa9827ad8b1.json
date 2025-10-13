@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT\n                ti.id,\n                ti.server_id,\n                ti.tool_id,\n                ti.instance_name,\n                ti.description,\n                ti.created_at,\n                t.name as tool_name,\n                t.description as tool_description,\n                tk.title as toolkit_name\n            FROM tool_instances ti\n            JOIN tools t ON ti.tool_id = t.id\n            JOIN toolkits tk ON t.toolkit_id = tk.id\n            WHERE ti.id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "server_id",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "tool_id",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "instance_name",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "description",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 5,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "tool_name",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "tool_description",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "toolkit_name",
+        "ordinal": 8,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "719d5244a5600ece93f93d3bec6db78efde101bfbba55e93b1b0cfa9827ad8b1"
+}

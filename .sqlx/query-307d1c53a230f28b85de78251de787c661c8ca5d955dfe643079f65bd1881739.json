@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE oauth_refresh_tokens SET used_at = unixepoch() WHERE token_hash = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "307d1c53a230f28b85de78251de787c661c8ca5d955dfe643079f65bd1881739"
+}

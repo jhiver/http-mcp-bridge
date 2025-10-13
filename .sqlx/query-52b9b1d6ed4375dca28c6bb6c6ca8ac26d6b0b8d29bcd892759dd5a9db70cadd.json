@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT description FROM tools WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "description",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "52b9b1d6ed4375dca28c6bb6c6ca8ac26d6b0b8d29bcd892759dd5a9db70cadd"
+}

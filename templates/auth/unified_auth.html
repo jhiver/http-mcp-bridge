@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In or Sign Up - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h1>Login or sign up below</h1>
+
+    {% match error %}
+    {% when Some with (msg) %}
+    <div class="error">{{ msg }}</div>
+    {% when None %}
+    {% endmatch %}
+
+    <form method="post" action="/auth">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                autocomplete="email"
+                placeholder="you@example.com">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password (optional)</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                autocomplete="current-password"
+                placeholder="Leave empty for passwordless login">
+            <small style="color: #666; font-size: 12px;">
+                • If you have an account with a password, enter it to login<br>
+                • If you leave this empty, we'll email you a login link<br>
+                • New users: provide a password or leave empty to generate one
+            </small>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Continue</button>
+    </form>
+</div>
+{% endblock %}

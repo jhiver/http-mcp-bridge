@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT\n                eh.id as \"id!: i64\",\n                s.name as \"server_name!: String\",\n                ti.instance_name as \"instance_name!: String\",\n                t.name as \"tool_name!: String\",\n                eh.started_at as \"started_at!: String\",\n                eh.duration_ms,\n                eh.status as \"status!: String\",\n                eh.http_status_code\n            FROM execution_history eh\n            INNER JOIN servers s ON eh.server_id = s.id\n            INNER JOIN tool_instances ti ON eh.instance_id = ti.id\n            INNER JOIN tools t ON eh.tool_id = t.id\n            WHERE s.user_id = ?\n            ORDER BY eh.started_at DESC\n            LIMIT ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!: i64",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "server_name!: String",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "instance_name!: String",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "tool_name!: String",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "started_at!: String",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "duration_ms",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "status!: String",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "http_status_code",
+        "ordinal": 7,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "461f22b35baefc4f691536e94bf59457040aa2c6d0c72751cd8d33d7e977f79c"
+}

@@ -1,0 +1,94 @@
+{% extends "base_authenticated.html" %}
+
+{% block title %}{{ tool.name }} - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/toolkits">My Toolkits</a> /
+    <a href="/toolkits/{{ toolkit_id }}">{{ toolkit_title }}</a> /
+    {{ tool.name }}
+</div>
+
+<div class="page-header">
+    <div>
+        <h1>{{ tool.name }}</h1>
+    </div>
+    <div class="actions">
+        <a href="/toolkits/{{ toolkit_id }}/tools/{{ tool.id }}/test"
+           class="btn btn-small btn-primary">Test Tool</a>
+        <a href="/toolkits/{{ toolkit_id }}/tools/{{ tool.id }}/edit"
+           class="btn btn-small">Edit</a>
+        <form method="post"
+              action="/toolkits/{{ toolkit_id }}/tools/{{ tool.id }}/delete"
+              class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="btn btn-small btn-danger"
+                    onclick="return confirm('Delete tool {{ tool.name }}?')">
+                Delete
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="tool-details">
+    {% if tool.description != "" %}
+    <section>
+        <h2>Description</h2>
+        <p>{{ tool.description }}</p>
+    </section>
+    {% endif %}
+
+    <section>
+        <h2>HTTP Request Configuration</h2>
+        <dl>
+            <dt>Method</dt>
+            <dd><span class="method-badge">{{ tool.method }}</span></dd>
+
+            <dt>URL</dt>
+            <dd>{% if tool.url != "" %}{{ tool.url }}{% else %}Not configured{% endif %}</dd>
+
+            <dt>Headers</dt>
+            <dd><pre>{{ tool.headers }}</pre></dd>
+
+            {% if tool.body != "{}" && tool.body != "" %}
+            <dt>Body</dt>
+            <dd><pre>{{ tool.body }}</pre></dd>
+            {% endif %}
+
+            <dt>Timeout</dt>
+            <dd>{{ tool.timeout_ms }}ms</dd>
+        </dl>
+    </section>
+
+    <section>
+        <h2>Parameters</h2>
+        {% if parameters.is_empty() %}
+        <p class="empty">No parameters detected in tool templates</p>
+        {% else %}
+        <p class="info">Parameters extracted from URL, headers, and body templates</p>
+        <table class="params-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for param in parameters %}
+                <tr>
+                    <td><code>{{ param.name }}</code></td>
+                    <td>{{ param.param_type }}</td>
+                    <td>{{ param.source }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="info" style="margin-top: 1rem;">
+            These parameters will be configurable when creating tool instances.
+            You can expose them to LLMs, use server defaults, or set fixed values.
+        </p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

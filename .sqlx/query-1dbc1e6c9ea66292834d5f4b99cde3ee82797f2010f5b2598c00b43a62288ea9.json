@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM server_toolkits WHERE server_id = ? AND toolkit_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "1dbc1e6c9ea66292834d5f4b99cde3ee82797f2010f5b2598c00b43a62288ea9"
+}

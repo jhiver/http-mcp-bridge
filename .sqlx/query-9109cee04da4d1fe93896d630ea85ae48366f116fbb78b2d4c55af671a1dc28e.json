@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT\n                t.id as toolkit_id,\n                t.title,\n                t.description,\n                CAST(COUNT(tool.id) AS INTEGER) as \"tools_count!: i64\"\n            FROM server_toolkits st\n            JOIN toolkits t ON st.toolkit_id = t.id\n            LEFT JOIN tools tool ON t.id = tool.toolkit_id\n            WHERE st.server_id = ?\n            GROUP BY t.id\n            ORDER BY t.title\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "toolkit_id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "title",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "description",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "tools_count!: i64",
+        "ordinal": 3,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "9109cee04da4d1fe93896d630ea85ae48366f116fbb78b2d4c55af671a1dc28e"
+}

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT 1 as result FROM toolkits WHERE id = ? AND user_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "result",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b9900d970cacf1f58d7bf408a8c2c159a0a43b5810823cf7721393ded9d28132"
+}

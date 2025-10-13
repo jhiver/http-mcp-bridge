@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h1>Create Account</h1>
+
+    {% match error %}
+    {% when Some with (msg) %}
+    <div class="error">{{ msg }}</div>
+    {% when None %}
+    {% endmatch %}
+
+    <form method="post" action="/signup">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                autocomplete="email"
+                maxlength="255"
+                placeholder="you@example.com">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                minlength="8"
+                autocomplete="new-password"
+                placeholder="At least 8 characters">
+        </div>
+
+        <div class="form-group">
+            <label for="password_confirm">Confirm Password</label>
+            <input
+                type="password"
+                id="password_confirm"
+                name="password_confirm"
+                required
+                minlength="8"
+                autocomplete="new-password"
+                placeholder="Enter password again">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Sign Up</button>
+    </form>
+
+    <p class="auth-link">
+        Already have an account? <a href="/login">Log In</a>
+    </p>
+</div>
+{% endblock %}

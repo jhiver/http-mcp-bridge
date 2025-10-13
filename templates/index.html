@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Transform HTTP APIs into MCP tools for Claude and other LLMs</h1>
+    <p style="font-style: italic; margin-top: 10px; color: var(--text-dim);">As Saraswati, Hindu goddess of knowledge, transforms knowledge into wisdom, SaraMCP transforms external information into actionable intelligence</p>
+</div>
+
+<div class="auth-container" style="max-width: 500px; margin: 20px auto 40px;">
+    <h2 style="text-align: center; margin-bottom: 30px;">Login or sign up below</h2>
+
+    <form method="post" action="/auth">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                autocomplete="email"
+                placeholder="you@example.com">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password (optional)</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                autocomplete="current-password"
+                placeholder="Leave empty for passwordless login">
+            <small style="color: #666; font-size: 12px; display: block; margin-top: 8px;">
+                • If you have an account with a password, enter it to login<br>
+                • If you leave this empty, we'll email you a login link<br>
+                • New users: provide a password or leave empty to generate one
+            </small>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Continue</button>
+    </form>
+</div>
+{% endblock %}

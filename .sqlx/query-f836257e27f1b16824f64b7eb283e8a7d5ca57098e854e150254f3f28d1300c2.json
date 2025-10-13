@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                UPDATE server_globals\n                SET value = ?, is_secret = ?, updated_at = unixepoch()\n                WHERE server_id = ? AND key = ?\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "f836257e27f1b16824f64b7eb283e8a7d5ca57098e854e150254f3f28d1300c2"
+}

@@ -1,0 +1,432 @@
+{% extends "base_authenticated.html" %}
+
+{% block title %}Dashboard - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-header">
+        <h1>Dashboard</h1>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Servers</div>
+            <div class="stat-value">{{ stats.total_servers }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Toolkits</div>
+            <div class="stat-value">{{ stats.total_toolkits }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Tools</div>
+            <div class="stat-value">{{ stats.total_tools }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Instances</div>
+            <div class="stat-value">{{ stats.total_instances }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Executions (24h)</div>
+            <div class="stat-value">{{ stats.executions_24h }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Executions (7d)</div>
+            <div class="stat-value">{{ stats.executions_7d }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Executions (All)</div>
+            <div class="stat-value">{{ stats.executions_all_time }}</div>
+        </div>
+    </div>
+
+    <!-- Tutorial Info Box -->
+    <div class="info-box tutorial-box">
+        <div class="info-icon">📚</div>
+        <div class="info-content">
+            <h3>New to SaraMCP?</h3>
+            <p>Learn how to create toolkits, configure MCP servers, and expose HTTP APIs as AI-ready tools.</p>
+            <a href="/tutorial" class="btn btn-primary">Start Tutorial</a>
+        </div>
+    </div>
+
+    <!-- Server Statistics -->
+    <div class="dashboard-section">
+        <h2>Servers</h2>
+        {% if server_stats.len() == 0 %}
+        <div class="empty-state">
+            <p>No servers yet. <a href="/servers/new">Create a server</a> to get started.</p>
+        </div>
+        {% else %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Server Name</th>
+                    <th>Instances</th>
+                    <th>Executions (24h)</th>
+                    <th>Success Rate</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for server in server_stats %}
+                <tr>
+                    <td><a href="/servers/{{ server.server_id }}">{{ server.server_name }}</a></td>
+                    <td>{{ server.instance_count }}</td>
+                    <td>{{ server.executions_24h }}</td>
+                    <td>
+                        {% if server.executions_24h == 0 %}
+                        <span class="text-muted">N/A</span>
+                        {% else %}
+                        <span class="success-rate">{{ server.success_rate }}%</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/servers/{{ server.server_id }}" class="btn btn-sm btn-secondary">View</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+
+    <!-- Most Used Tools -->
+    <div class="dashboard-section">
+        <h2>Most Used Tools</h2>
+        {% if most_used_tools.len() == 0 %}
+        <div class="empty-state">
+            <p>No tool executions yet. Execute some tools to see statistics here.</p>
+        </div>
+        {% else %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Instance Name</th>
+                    <th>Tool</th>
+                    <th>Executions</th>
+                    <th>Success</th>
+                    <th>Errors</th>
+                    <th>Avg Duration</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tool in most_used_tools %}
+                <tr>
+                    <td>{{ tool.instance_name }}</td>
+                    <td>{{ tool.tool_name }}</td>
+                    <td>{{ tool.execution_count }}</td>
+                    <td>{{ tool.success_count }}</td>
+                    <td>{{ tool.error_count }}</td>
+                    <td>
+                        {% match tool.avg_duration_ms %}
+                        {% when Some with (duration) %}
+                        {{ duration }}ms
+                        {% when None %}
+                        N/A
+                        {% endmatch %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+
+    <!-- Recent Executions -->
+    <div class="dashboard-section">
+        <h2>Recent Executions</h2>
+        {% if recent_executions.len() == 0 %}
+        <div class="empty-state">
+            <p>No recent executions.</p>
+        </div>
+        {% else %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Server</th>
+                    <th>Tool</th>
+                    <th>Status</th>
+                    <th>Duration</th>
+                    <th>HTTP Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exec in recent_executions %}
+                <tr>
+                    <td class="timestamp">{{ exec.started_at }}</td>
+                    <td>{{ exec.server_name }}</td>
+                    <td>
+                        <span class="tool-name">{{ exec.instance_name }}</span>
+                        <span class="text-muted">{{ exec.tool_name }}</span>
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ exec.status }}">
+                            {% if exec.status == "success" %}✓{% else %}✗{% endif %}
+                            {{ exec.status }}
+                        </span>
+                    </td>
+                    <td>
+                        {% match exec.duration_ms %}
+                        {% when Some with (duration) %}
+                        {{ duration }}ms
+                        {% when None %}
+                        -
+                        {% endmatch %}
+                    </td>
+                    <td>
+                        {% match exec.http_status_code %}
+                        {% when Some with (status) %}
+                        {{ status }}
+                        {% when None %}
+                        -
+                        {% endmatch %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--light-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--text-bright);
+}
+
+.dashboard-section {
+    background: var(--light-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.dashboard-section h2 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    color: var(--text-bright);
+    font-weight: 600;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 0.5rem;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.table thead {
+    background-color: var(--sidebar-bg);
+    border-bottom: 2px solid var(--border);
+}
+
+.table thead th {
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-bright);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background-color 0.2s;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.table tbody td {
+    padding: 0.75rem;
+    color: var(--fg);
+}
+
+.table tbody td a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.table tbody td a:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.status-success {
+    background-color: rgba(137, 209, 133, 0.2);
+    color: var(--success);
+    border: 1px solid var(--success);
+}
+
+.status-error {
+    background-color: rgba(244, 135, 113, 0.2);
+    color: var(--error);
+    border: 1px solid var(--error);
+}
+
+.status-timeout {
+    background-color: rgba(255, 203, 0, 0.2);
+    color: #ffcb00;
+    border: 1px solid #ffcb00;
+}
+
+.success-rate {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.tool-name {
+    font-weight: 500;
+    margin-right: 0.5rem;
+    color: var(--text-bright);
+}
+
+.timestamp {
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    font-size: 0.875rem;
+    color: var(--text-dim);
+}
+
+.text-muted {
+    color: var(--text-dim);
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    text-align: center;
+    text-decoration: none;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.btn-secondary {
+    color: var(--text-bright);
+    background-color: var(--secondary);
+    border-color: var(--secondary);
+}
+
+.btn-secondary:hover {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-dim);
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.empty-state a {
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.info-box {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.tutorial-box {
+    background: linear-gradient(135deg, #4a5f8e, #5eb3f6);
+}
+
+.info-icon {
+    font-size: 3rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.info-content {
+    flex: 1;
+    color: white;
+}
+
+.info-content h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.info-content p {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    opacity: 0.95;
+}
+
+.btn-primary {
+    background-color: white;
+    color: var(--primary);
+    font-weight: 600;
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+}
+
+.btn-primary:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+</style>
+{% endblock %}

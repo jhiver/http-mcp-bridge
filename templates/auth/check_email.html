@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Check Your Email - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="auth-container" style="text-align: center;">
+    <h1>📧 Check Your Email</h1>
+
+    <p class="lead" style="font-size: 18px; margin: 20px 0;">
+        We've sent a verification link to:
+    </p>
+
+    <p style="font-weight: bold; font-size: 16px; color: #4CAF50;">
+        {{ email }}
+    </p>
+
+    <p style="margin: 30px 0; color: #666;">
+        Click the link in the email to complete your authentication.<br>
+        The link will expire in 24 hours for new accounts, or 15 minutes for login links.
+    </p>
+
+    <p style="margin-top: 40px; font-size: 14px; color: #999;">
+        Didn't receive an email? Check your spam folder or try again.
+    </p>
+
+    <p style="margin-top: 20px;">
+        <a href="/" class="btn btn-secondary">Back to Home</a>
+    </p>
+</div>
+{% endblock %}

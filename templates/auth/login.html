@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Log In - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h1>Log In</h1>
+
+    {% if signup_success %}
+    <div class="success">Account created! Please log in.</div>
+    {% endif %}
+
+    {% match error %}
+    {% when Some with (msg) %}
+    <div class="error">{{ msg }}</div>
+    {% when None %}
+    {% endmatch %}
+
+    <form method="post" action="/login">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                autocomplete="email"
+                placeholder="you@example.com">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                autocomplete="current-password"
+                placeholder="Your password">
+        </div>
+
+        <div class="form-group checkbox">
+            <label>
+                <input type="checkbox" name="remember_me" value="true">
+                Remember me for 30 days
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Log In</button>
+    </form>
+
+    <p class="auth-link">
+        Don't have an account? <a href="/signup">Sign Up</a>
+    </p>
+</div>
+{% endblock %}

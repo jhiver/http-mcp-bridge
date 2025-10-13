@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Authorize {{ client_name }} - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h1>Authorize Access</h1>
+
+    <div style="margin: 2rem 0; padding: 1.5rem; background: var(--bg-secondary); border-radius: 8px;">
+        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">
+            <strong>{{ client_name }}</strong> wants to access your account
+        </p>
+        <p style="color: var(--text-dim); margin: 0;">
+            Logged in as: {{ user_email }}
+        </p>
+    </div>
+
+    <div style="margin: 2rem 0;">
+        <h2 style="font-size: 1.2rem; margin-bottom: 1rem;">This application will be able to:</h2>
+        <ul style="list-style: none; padding: 0;">
+            {% for scope in scopes %}
+                {% if scope == "mcp:read" || scope == "read" %}
+                    <li style="padding: 0.5rem 0; display: flex; align-items: center;">
+                        <span style="color: var(--primary); margin-right: 0.5rem;">✓</span>
+                        Read your MCP server data
+                    </li>
+                {% endif %}
+                {% if scope == "mcp:write" || scope == "write" %}
+                    <li style="padding: 0.5rem 0; display: flex; align-items: center;">
+                        <span style="color: var(--primary); margin-right: 0.5rem;">✓</span>
+                        Modify your MCP servers and tools
+                    </li>
+                {% endif %}
+                {% if scope == "mcp:admin" || scope == "admin" %}
+                    <li style="padding: 0.5rem 0; display: flex; align-items: center;">
+                        <span style="color: var(--primary); margin-right: 0.5rem;">✓</span>
+                        Access administrative functions
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+
+    <form method="post" action="/.oauth/authorize">
+        <!-- CSRF Protection -->
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <!-- OAuth Parameters -->
+        <input type="hidden" name="client_id" value="{{ client_id }}">
+        <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}">
+        <input type="hidden" name="response_type" value="{{ response_type }}">
+        <input type="hidden" name="scope" value="{{ scope }}">
+
+        {% match state %}
+        {% when Some with (s) %}
+            <input type="hidden" name="state" value="{{ s }}">
+        {% when None %}
+        {% endmatch %}
+
+        {% match code_challenge %}
+        {% when Some with (challenge) %}
+            <input type="hidden" name="code_challenge" value="{{ challenge }}">
+            {% match code_challenge_method %}
+            {% when Some with (method) %}
+                <input type="hidden" name="code_challenge_method" value="{{ method }}">
+            {% when None %}
+            {% endmatch %}
+        {% when None %}
+        {% endmatch %}
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" name="action" value="allow" class="btn btn-primary" style="flex: 1;">
+                Allow Access
+            </button>
+            <button type="submit" name="action" value="deny" class="btn btn-secondary" style="flex: 1;">
+                Deny
+            </button>
+        </div>
+    </form>
+
+    <div style="margin-top: 2rem; padding: 1rem; background: var(--bg-secondary); border-left: 4px solid var(--warning); border-radius: 4px;">
+        <p style="margin: 0; color: var(--text-dim); font-size: 0.9rem;">
+            ⚠️ Only authorize applications you trust. You can revoke access at any time from your account settings.
+        </p>
+    </div>
+</div>
+{% endblock %}

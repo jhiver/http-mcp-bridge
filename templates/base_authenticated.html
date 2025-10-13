@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SaraMCP{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/toolkits" class="logo">SaraMCP</a>
+        <div class="nav-links">
+            <a href="/tutorial">Tutorial</a>
+            <a href="/contact">Contact Us</a>
+            <a href="/settings" style="color: var(--text-dim); margin-right: 1rem; text-decoration: none;">{{ user_email }}</a>
+            <a href="/logout">Log Out</a>
+        </div>
+    </nav>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <ul>
+                    <li>
+                        <a href="/dashboard">
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/tutorial">
+                            Tutorial
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/toolkits/explore">
+                            Discover
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/toolkits">
+                            My Toolkits
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/servers">
+                            My Servers
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 SaraMCP - MCP Tool Management</p>
+    </footer>
+
+    <!-- Form handler for progressive enhancement -->
+    <script src="/static/form-handler.js"></script>
+</body>
+</html>

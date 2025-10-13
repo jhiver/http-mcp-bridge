@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT\n                ti.id as \"instance_id!: i64\",\n                ti.instance_name as \"instance_name!: String\",\n                t.name as \"tool_name!: String\",\n                CAST(COUNT(*) AS INTEGER) as \"execution_count!: i64\",\n                CAST(SUM(CASE WHEN eh.status = 'success' THEN 1 ELSE 0 END) AS INTEGER) as \"success_count!: i64\",\n                CAST(SUM(CASE WHEN eh.status = 'error' THEN 1 ELSE 0 END) AS INTEGER) as \"error_count!: i64\",\n                AVG(eh.duration_ms) as \"avg_duration_ms?: f64\"\n            FROM execution_history eh\n            INNER JOIN tool_instances ti ON eh.instance_id = ti.id\n            INNER JOIN tools t ON eh.tool_id = t.id\n            INNER JOIN servers s ON eh.server_id = s.id\n            WHERE s.user_id = ?\n            GROUP BY ti.id, ti.instance_name, t.name\n            ORDER BY COUNT(*) DESC\n            LIMIT ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "instance_id!: i64",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "instance_name!: String",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "tool_name!: String",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "execution_count!: i64",
+        "ordinal": 3,
+        "type_info": "Null"
+      },
+      {
+        "name": "success_count!: i64",
+        "ordinal": 4,
+        "type_info": "Null"
+      },
+      {
+        "name": "error_count!: i64",
+        "ordinal": 5,
+        "type_info": "Null"
+      },
+      {
+        "name": "avg_duration_ms?: f64",
+        "ordinal": 6,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "d19e4cc5276b4596d41b8bb956862cb9821f25fc91e2b79f22ca9d872003c890"
+}

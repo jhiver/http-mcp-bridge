@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM pending_registrations WHERE expires_at < ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "72c0006c4992b41b1af2503b4bda8ffe0a284bf7fdf4a1c9fe83a1f63e7893fd"
+}

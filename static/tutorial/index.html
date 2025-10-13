@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaraMCP Tutorial - Transform HTTP APIs into MCP Tools</title>
+    <style>
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #0f0f1e;
+            --bg-card: #242442;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0b0;
+            --accent: #5eb3f6;
+            --accent-hover: #4a9fdb;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --border: #3a3a5a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            margin: 2rem auto;
+            max-width: 1400px;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+
+        .wrapper {
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem 2rem 2rem;
+            gap: 2rem;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+            width: 280px;
+            flex-shrink: 0;
+        }
+
+        nav {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        nav h3 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        nav ul {
+            list-style: none;
+        }
+
+        nav li {
+            margin: 0.3rem 0;
+        }
+
+        nav a {
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.3s;
+            display: block;
+            padding: 0.3rem 0.5rem;
+            border-radius: 5px;
+            font-size: 0.95rem;
+        }
+
+        nav a:hover {
+            color: var(--accent);
+            background: rgba(94, 179, 246, 0.1);
+        }
+
+        .main-content {
+            flex: 1;
+            max-width: 900px;
+        }
+
+        .content-section {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        h2 {
+            color: var(--accent);
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        h3 {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        h4 {
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            margin: 1.2rem 0 0.8rem 0;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        ul, ol {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin: 0.5rem 0;
+        }
+
+        code {
+            background: var(--bg-secondary);
+            color: var(--accent);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        pre {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 1rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .highlight-box {
+            background: rgba(94, 179, 246, 0.1);
+            border-left: 4px solid var(--accent);
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .warning-box {
+            background: rgba(255, 152, 0, 0.1);
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .success-box {
+            background: rgba(76, 175, 80, 0.1);
+            border-left: 4px solid var(--success);
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .param-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .param-table th {
+            background: var(--bg-secondary);
+            color: var(--accent);
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .param-table td {
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .param-table tr:hover {
+            background: rgba(94, 179, 246, 0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 3px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .badge-get {
+            background: var(--success);
+            color: white;
+        }
+
+        .badge-post {
+            background: var(--accent);
+            color: white;
+        }
+
+        .badge-string {
+            background: #9c27b0;
+            color: white;
+        }
+
+        .badge-integer {
+            background: #ff5722;
+            color: white;
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--accent);
+            color: white;
+            padding: 0.8rem 1rem;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: all 0.3s;
+            opacity: 0.8;
+            display: none;
+        }
+
+        .back-to-top:hover {
+            opacity: 1;
+            transform: translateY(-3px);
+        }
+
+        strong {
+            color: var(--text-primary);
+        }
+
+        .conclusion {
+            background: linear-gradient(135deg, rgba(94, 179, 246, 0.1), rgba(76, 175, 80, 0.1));
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 3rem;
+        }
+
+        .conclusion h2 {
+            border: none;
+        }
+
+        .screenshot-note {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 1rem;
+            margin: 1rem 0;
+            text-align: center;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 968px) {
+            .wrapper {
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            .sidebar {
+                position: relative;
+                top: 0;
+                width: 100%;
+                margin-bottom: 2rem;
+            }
+
+            .main-content {
+                max-width: 100%;
+            }
+
+            header {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>SaraMCP Tutorial</h1>
+        <p class="subtitle">Transform HTTP APIs into MCP Tools for Claude and Other LLMs</p>
+    </header>
+
+    <div class="wrapper">
+        <div class="sidebar">
+            <nav>
+                <h3>Table of Contents</h3>
+                <ul>
+                    <li><a href="#introduction">Introduction</a></li>
+                    <li><a href="#getting-started">Getting Started</a></li>
+                    <li><a href="#creating-toolkit">Creating Your First Toolkit</a></li>
+                    <li><a href="#creating-server">Creating an MCP Server</a></li>
+                    <li><a href="#installing-tools">Installing Tools</a></li>
+                    <li><a href="#parameters">Parameter Configuration</a></li>
+                    <li><a href="#testing">Testing Your Tools</a></li>
+                    <li><a href="#connecting">Connecting to Your Server</a></li>
+                    <li><a href="#concepts">Key Concepts</a></li>
+                    <li><a href="#best-practices">Best Practices</a></li>
+                </ul>
+            </nav>
+        </div>
+
+        <div class="main-content">
+            <div class="content-section" id="introduction">
+                <h2>Introduction</h2>
+                <p>SaraMCP is a powerful platform that transforms HTTP APIs into MCP (Model Context Protocol) tools that can be used by Claude and other LLMs. This tutorial will walk you through the complete process of creating, configuring, and using MCP servers.</p>
+
+                <h3>What You'll Learn</h3>
+                <ul>
+                    <li>How to create reusable toolkits of HTTP-based tools</li>
+                    <li>How to configure MCP servers with tool instances</li>
+                    <li>How to manage parameter bindings with typed variables</li>
+                    <li>How to test and execute MCP protocol operations</li>
+                    <li>How to connect your MCP server to Claude or other LLMs</li>
+                </ul>
+            </div>
+
+            <div class="content-section" id="getting-started">
+                <h2>Getting Started</h2>
+
+                <h3>Step 1: Access SaraMCP</h3>
+                <p>Navigate to <code>https://saramcp.com</code> to access the homepage. You'll see a clean interface with options to log in or sign up.</p>
+
+                <h3>Step 2: Log In or Sign Up</h3>
+                <p>Enter your credentials to access the platform. After logging in, you'll be taken to the dashboard.</p>
+
+                <p>The dashboard shows your statistics including:</p>
+                <ul>
+                    <li>Number of servers, toolkits, tools, and instances</li>
+                    <li>Execution statistics (24h, 7d, all-time)</li>
+                    <li>Server performance metrics</li>
+                </ul>
+            </div>
+
+            <div class="content-section" id="creating-toolkit">
+                <h2>Creating Your First Toolkit</h2>
+
+                <div class="highlight-box">
+                    <strong>What is a Toolkit?</strong> A collection of related HTTP API tools that can be reused across multiple servers.
+                </div>
+
+                <h3>Step 3: Navigate to Toolkits</h3>
+                <p>Click "My Toolkits" in the sidebar to see your existing toolkits.</p>
+
+                <h3>Step 4: Create a New Toolkit</h3>
+                <p>Click the "+ CREATE TOOLKIT" button to open the creation form.</p>
+
+                <p>Fill in the details:</p>
+                <ul>
+                    <li><strong>Toolkit Name:</strong> "Public APIs Toolkit"</li>
+                    <li><strong>Description:</strong> A collection of free public APIs</li>
+                    <li><strong>Visibility:</strong> Choose "Public" to allow others to discover and use your toolkit</li>
+                </ul>
+
+                <h3>Step 5: Add Tools to Your Toolkit</h3>
+                <p>After creating the toolkit, you'll see the toolkit details page. Click "+ CREATE TOOL" to add your first tool.</p>
+
+                <h3>Step 6: Configure Your First Tool</h3>
+                <p>Let's add the Chuck Norris Jokes API:</p>
+                <ul>
+                    <li><strong>Tool Name:</strong> Chuck Norris Jokes</li>
+                    <li><strong>Description:</strong> Get a random Chuck Norris joke</li>
+                    <li><strong>HTTP Method:</strong> <span class="badge badge-get">GET</span></li>
+                    <li><strong>URL:</strong> <code>https://api.chucknorris.io/jokes/random</code></li>
+                    <li><strong>Timeout:</strong> 30000ms</li>
+                </ul>
+
+                <h3>Step 7: Add More Tools</h3>
+                <p>Repeat the process to add more tools. We added:</p>
+                <ol>
+                    <li><strong>Chuck Norris Jokes</strong> - Simple GET request with no parameters</li>
+                    <li><strong>Currency Exchange Rates</strong> - GET with <code>{{string:base_currency}}</code> parameter</li>
+                    <li><strong>Advice Generator</strong> - GET with optional <code>{{string:query}}</code> parameter</li>
+                </ol>
+
+                <h4>Understanding Parameters</h4>
+                <p>SaraMCP supports typed parameters in your API templates:</p>
+
+                <table class="param-table">
+                    <thead>
+                        <tr>
+                            <th>Syntax</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>{{string:name}}</code></td>
+                            <td><span class="badge badge-string">String</span></td>
+                            <td>String parameter</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{integer:id}}</code></td>
+                            <td><span class="badge badge-integer">Integer</span></td>
+                            <td>Integer parameter</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{number:rate}}</code></td>
+                            <td>Number</td>
+                            <td>Decimal number</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{boolean:debug}}</code></td>
+                            <td>Boolean</td>
+                            <td>Boolean value</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{json:data}}</code></td>
+                            <td>JSON</td>
+                            <td>JSON object/array</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{url:endpoint}}</code></td>
+                            <td>URL</td>
+                            <td>Validated URL</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="content-section" id="creating-server">
+                <h2>Creating and Configuring an MCP Server</h2>
+
+                <h3>Step 8: Create a New Server</h3>
+                <p>Navigate to "My Servers" and click "+ CREATE SERVER".</p>
+
+                <p>Fill in:</p>
+                <ul>
+                    <li><strong>Server Name:</strong> My API Hub</li>
+                    <li><strong>Description:</strong> A collection of useful public APIs accessible through MCP</li>
+                </ul>
+
+                <h3>Step 9: Server Created</h3>
+                <p>After creation, you'll see your server's main page with connection information.</p>
+
+                <div class="highlight-box">
+                    <p>Note the unique URLs generated for your server:</p>
+                    <ul>
+                        <li><strong>SSE Endpoint:</strong> For real-time connections</li>
+                        <li><strong>Streamable HTTP:</strong> For standard HTTP requests</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="content-section" id="installing-tools">
+                <h2>Installing Toolkits and Creating Tool Instances</h2>
+
+                <h3>Step 10: Install Toolkits to Your Server</h3>
+                <p>Click on the "Toolkits" tab to manage which toolkits are available in your server.</p>
+
+                <p>Your toolkit appears in the "Available" section. Click the ">>" button to install it.</p>
+
+                <h3>Step 11: Create Tool Instances</h3>
+                <p>Navigate to the "Tools" tab to see available tools and create instances.</p>
+
+                <p>Click the ">>" button next to each tool to create an instance. The system automatically:</p>
+                <ul>
+                    <li>Creates a tool instance with the same name as the tool</li>
+                    <li>Makes it available as an MCP function</li>
+                    <li>Discovers all parameters from the tool templates</li>
+                </ul>
+            </div>
+
+            <div class="content-section" id="parameters">
+                <h2>Parameter Configuration</h2>
+
+                <h3>Step 12: Configure Parameter Bindings</h3>
+                <p>Navigate to the "Bindings" tab to configure how parameters are resolved.</p>
+
+                <p>The system automatically discovered:</p>
+                <ul>
+                    <li><code>query</code> - From the Advice Generator tool</li>
+                    <li><code>base_currency</code> - From the Currency Exchange Rates tool</li>
+                </ul>
+
+                <h3>Three-Tier Parameter Resolution</h3>
+
+                <div class="highlight-box">
+                    <p>For each parameter, you can choose:</p>
+
+                    <ol>
+                        <li>
+                            <strong>Instance Level (Fixed Value)</strong>
+                            <ul>
+                                <li>Set a fixed value for this specific instance</li>
+                                <li>Can include variables like <code>{{api_key}}</code></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Server Level (Server Global)</strong>
+                            <ul>
+                                <li>Use a value from server globals</li>
+                                <li>Shared across all instances in the server</li>
+                                <li>Can be marked as secret (encrypted)</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Exposed (LLM Provided)</strong>
+                            <ul>
+                                <li>Leave empty to require the LLM to provide the value</li>
+                                <li>These become function parameters in the MCP protocol</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </div>
+
+                <p>In our example, we left both parameters as "exposed" so the LLM can provide different values each time.</p>
+            </div>
+
+            <div class="content-section" id="testing">
+                <h2>Testing Your Tools</h2>
+
+                <h3>Step 13: Test Tool Execution</h3>
+                <p>Navigate back to your toolkit and click "TEST" on any tool.</p>
+
+                <p>The test page shows the request configuration. Click "EXECUTE TEST" to run the API call.</p>
+
+                <div class="success-box">
+                    <p>The test shows:</p>
+                    <ul>
+                        <li>HTTP status code (200 OK)</li>
+                        <li>Response body with the Chuck Norris joke</li>
+                        <li>Response headers</li>
+                        <li>cURL command for debugging</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="content-section" id="connecting">
+                <h2>Connecting to Your MCP Server</h2>
+
+                <h3>Step 14: Get Connection Information</h3>
+                <p>Return to your server's main tab to see connection details.</p>
+
+                <p>Your server provides two connection methods:</p>
+
+                <table class="param-table">
+                    <thead>
+                        <tr>
+                            <th>Connection Type</th>
+                            <th>URL Format</th>
+                            <th>Best For</th>
+                            <th>Protocol</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>SSE Endpoint</strong></td>
+                            <td><code>https://[uuid].saramcp.com</code></td>
+                            <td>Real-time, streaming connections</td>
+                            <td>Server-Sent Events</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Streamable HTTP</strong></td>
+                            <td><code>https://saramcp.com/s/[uuid]</code></td>
+                            <td>Standard request/response</td>
+                            <td>JSON-RPC 2.0</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Step 15: Connect with Claude or Other LLMs</h3>
+                <p>To connect your server to Claude Desktop or Claude Code, use the provided connection URL. The server will:</p>
+                <ol>
+                    <li>Respond to MCP protocol handshakes</li>
+                    <li>List all configured tool instances</li>
+                    <li>Accept tool calls with parameters</li>
+                    <li>Execute HTTP requests and return results</li>
+                </ol>
+            </div>
+
+            <div class="content-section" id="concepts">
+                <h2>Key Concepts Summary</h2>
+
+                <h3>Core Components</h3>
+
+                <table class="param-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Description</th>
+                            <th>Key Features</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Toolkits</strong></td>
+                            <td>Collections of related HTTP API tools</td>
+                            <td>
+                                <ul>
+                                    <li>Reusable across multiple servers</li>
+                                    <li>Can be public (shared) or private</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tools</strong></td>
+                            <td>HTTP request templates with typed parameters</td>
+                            <td>
+                                <ul>
+                                    <li>Support GET, POST, PUT, DELETE, PATCH methods</li>
+                                    <li>Parameters use <code>{{type:name}}</code> syntax</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Servers</strong></td>
+                            <td>MCP endpoints with unique URLs</td>
+                            <td>
+                                <ul>
+                                    <li>Import toolkits to make tools available</li>
+                                    <li>Configure access control (public/organization/private)</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tool Instances</strong></td>
+                            <td>Configured instances of tools within a server</td>
+                            <td>
+                                <ul>
+                                    <li>Each instance has a unique name (MCP function name)</li>
+                                    <li>Can override parameter bindings</li>
+                                </ul>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Parameter Resolution Priority</h3>
+
+                <pre><code>1. Instance Level (Highest Priority)
+   ↓
+2. Server Level (Medium Priority)
+   ↓
+3. Exposed (Lowest Priority - LLM Provided)</code></pre>
+
+                <h3>Security Features</h3>
+
+                <div class="highlight-box">
+                    <ul>
+                        <li><strong>Secrets Management:</strong> Server globals can be marked as secrets</li>
+                        <li><strong>Encryption:</strong> AES-256-GCM encryption for sensitive data</li>
+                        <li><strong>Access Control:</strong> Three-tier access levels (public/organization/private)</li>
+                        <li><strong>OAuth 2.0:</strong> Standard authentication flow for protected servers</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="content-section" id="best-practices">
+                <h2>Best Practices</h2>
+
+                <h3>1. Organize Tools into Logical Toolkits</h3>
+                <ul>
+                    <li>Group related APIs together</li>
+                    <li>Use descriptive names and descriptions</li>
+                    <li>Consider making useful toolkits public</li>
+                </ul>
+
+                <h3>2. Use Typed Parameters</h3>
+                <ul>
+                    <li>Choose appropriate types for validation</li>
+                    <li>Use descriptive parameter names</li>
+                    <li>Document parameter purposes in tool descriptions</li>
+                </ul>
+
+                <h3>3. Configure Parameters Thoughtfully</h3>
+                <ul>
+                    <li>Use instance-level for environment-specific values</li>
+                    <li>Use server-level for shared configuration</li>
+                    <li>Use exposed for dynamic, user-provided values</li>
+                </ul>
+
+                <h3>4. Test Before Deployment</h3>
+                <ul>
+                    <li>Use the test interface to verify tools work</li>
+                    <li>Check response formats and error handling</li>
+                    <li>Save working configurations</li>
+                </ul>
+
+                <h3>5. Secure Sensitive Data</h3>
+                <ul>
+                    <li>Mark API keys and tokens as secrets</li>
+                    <li>Use server globals for shared credentials</li>
+                    <li>Never expose sensitive data in public toolkits</li>
+                </ul>
+            </div>
+
+            <div class="content-section conclusion">
+                <h2>🎉 Congratulations!</h2>
+                <p>You've learned how to:</p>
+                <ul style="text-align: left; display: inline-block;">
+                    <li>✅ Create toolkits with HTTP API tools</li>
+                    <li>✅ Configure MCP servers with tool instances</li>
+                    <li>✅ Manage parameter bindings and secrets</li>
+                    <li>✅ Test tool execution</li>
+                    <li>✅ Connect servers to LLMs via MCP protocol</li>
+                </ul>
+
+                <p><strong>SaraMCP provides a powerful bridge between HTTP APIs and LLMs, enabling you to extend Claude and other models with custom tools and integrations.</strong></p>
+
+                <h3>Next Steps</h3>
+                <ul style="text-align: left; display: inline-block;">
+                    <li>Explore more complex API integrations</li>
+                    <li>Create toolkits for your favorite services</li>
+                    <li>Share public toolkits with the community</li>
+                    <li>Integrate your MCP servers with Claude Desktop or Claude Code</li>
+                </ul>
+
+                <p><strong>Happy building! 🚀</strong></p>
+            </div>
+        </div> <!-- End of main-content -->
+    </div> <!-- End of wrapper -->
+
+    <a href="#" class="back-to-top">Back to Top ↑</a>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Back to top button
+        const backToTop = document.querySelector('.back-to-top');
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                backToTop.style.display = 'block';
+            } else {
+                backToTop.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

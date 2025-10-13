@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SaraMCP{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="logo">SaraMCP</a>
+        <div class="nav-links">
+            <a href="/tutorial">Tutorial</a>
+            <a href="/contact">Contact Us</a>
+            <a href="/login">Log In</a>
+            <a href="/signup">Sign Up</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2025 SaraMCP - MCP Tool Management</p>
+    </footer>
+
+    <!-- Form handler for progressive enhancement -->
+    <script src="/static/form-handler.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT 1 as result FROM servers WHERE id = ? AND user_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "result",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "121253a66f3db85b8bdc742c1b65646e45dc32dcd2617b4a8c76536edcffb7ab"
+}

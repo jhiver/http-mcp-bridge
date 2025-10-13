@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO magic_login_tokens (user_id, token, expires_at)\n            VALUES (?, ?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "159f3ac365eb536375f1dc749e3a6ea86d94701fddd4b8ac8651a2980b0dc65b"
+}

@@ -1,0 +1,207 @@
+{% extends "base_authenticated.html" %}
+
+{% block title %}Edit {{ tool.name }} - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/toolkits">My Toolkits</a> /
+    <a href="/toolkits/{{ toolkit_id }}">{{ toolkit_title }}</a> /
+    Edit {{ tool.name }}
+</div>
+
+<div class="page-header">
+    <h1>Edit Tool: {{ tool.name }}</h1>
+    <a href="/toolkits/{{ toolkit_id }}" class="btn btn-small">Cancel</a>
+</div>
+
+{% if let Some(err) = error %}
+<div class="error">{{ err }}</div>
+{% endif %}
+
+<form method="post" action="/toolkits/{{ toolkit_id }}/tools/{{ tool.id }}" class="form-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <fieldset>
+        <legend>Tool Information</legend>
+
+        <div class="form-group">
+            <label for="name">Tool Name *</label>
+            <input
+                type="text"
+                id="name"
+                name="name"
+                required
+                maxlength="100"
+                value="{{ tool.name }}">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea
+                id="description"
+                name="description"
+                rows="3">{{ tool.description }}</textarea>
+        </div>
+
+    </fieldset>
+
+    <fieldset>
+        <legend>HTTP Request Configuration</legend>
+
+        <div class="form-group">
+            <label for="method">HTTP Method & URL *</label>
+            <div class="method-url-row">
+                <select name="method" id="method" required>
+                    <option value="GET" {% if tool.method == "GET" %}selected{% endif %}>GET</option>
+                    <option value="POST" {% if tool.method == "POST" %}selected{% endif %}>POST</option>
+                    <option value="PUT" {% if tool.method == "PUT" %}selected{% endif %}>PUT</option>
+                    <option value="DELETE" {% if tool.method == "DELETE" %}selected{% endif %}>DELETE</option>
+                    <option value="PATCH" {% if tool.method == "PATCH" %}selected{% endif %}>PATCH</option>
+                </select>
+                <input
+                    type="text"
+                    name="url"
+                    id="url"
+                    required
+                    value="{{ tool.url }}"
+                    placeholder="https://api.example.com/users/{% raw %}{{integer:user_id}}{% endraw %}">
+            </div>
+            <small>Use {% raw %}{{type:name}}{% endraw %} for parameters. Types: string, integer, number, boolean</small>
+        </div>
+
+        <div class="form-group">
+            <label for="headers">Headers (JSON format)</label>
+            <textarea
+                id="headers"
+                name="headers"
+                rows="4"
+                style="font-family: monospace">{{ tool.headers }}</textarea>
+        </div>
+
+        <div class="form-group" id="body-section" {% if tool.method == "GET" || tool.method == "DELETE" %}style="display: none"{% endif %}>
+            <label for="body">Request Body (JSON format)</label>
+            <textarea
+                id="body"
+                name="body"
+                rows="6"
+                style="font-family: monospace">{{ tool.body }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="timeout_ms">Timeout (milliseconds) *</label>
+            <input
+                type="number"
+                id="timeout_ms"
+                name="timeout_ms"
+                value="{{ tool.timeout_ms }}"
+                min="1000"
+                max="120000"
+                step="1000"
+                required>
+        </div>
+    </fieldset>
+
+    <fieldset id="detected-params">
+        <legend>Detected Parameters</legend>
+        <div id="parameters-list" class="params-display">
+            <p>Parameters detected from your URL, headers, and body templates:</p>
+            <ul id="params-found">
+                {% for param in detected_params %}
+                <li><code>{% raw %}{{{{ param.param_type }}:{{ param.name }}}}{% endraw %}</code> - Found in {{ param.source }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </fieldset>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="/toolkits/{{ toolkit_id }}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<script>
+// Progressive enhancement - works without JS but better with it
+document.addEventListener('DOMContentLoaded', function() {
+    const methodSelect = document.getElementById('method');
+    const bodySection = document.getElementById('body-section');
+    const urlInput = document.getElementById('url');
+    const headersInput = document.getElementById('headers');
+    const bodyInput = document.getElementById('body');
+    const paramsList = document.getElementById('params-found');
+
+    // Show/hide body section based on method
+    function toggleBodySection() {
+        const method = methodSelect.value;
+        if (['POST', 'PUT', 'PATCH'].includes(method)) {
+            bodySection.style.display = 'block';
+        } else {
+            bodySection.style.display = 'none';
+        }
+    }
+
+    // Extract parameters from templates
+    function extractParameters() {
+        // Updated regex to support both formats
+        const paramRegex = /\{\{(?:(\w+):)?(\w+)\}\}/g;
+        const params = new Map();
+
+        // Extract from URL
+        const url = urlInput.value;
+        let match;
+        while ((match = paramRegex.exec(url)) !== null) {
+            const type = match[1] || 'string'; // Default to string if no type specified
+            const name = match[2];
+            params.set(name, { type: type, name: name, source: 'URL', pattern: match[0] });
+        }
+
+        // Extract from headers
+        const headers = headersInput.value;
+        paramRegex.lastIndex = 0; // Reset regex state
+        while ((match = paramRegex.exec(headers)) !== null) {
+            const type = match[1] || 'string'; // Default to string if no type specified
+            const name = match[2];
+            if (!params.has(name)) {
+                params.set(name, { type: type, name: name, source: 'Headers', pattern: match[0] });
+            }
+        }
+
+        // Extract from body (if visible)
+        if (bodySection.style.display !== 'none') {
+            const body = bodyInput.value;
+            paramRegex.lastIndex = 0; // Reset regex state
+            while ((match = paramRegex.exec(body)) !== null) {
+                const type = match[1] || 'string'; // Default to string if no type specified
+                const name = match[2];
+                if (!params.has(name)) {
+                    params.set(name, { type: type, name: name, source: 'Body', pattern: match[0] });
+                }
+            }
+        }
+
+        // Update display
+        paramsList.innerHTML = Array.from(params.values())
+            .map(p => `<li><code>${p.pattern}</code> (type: ${p.type}) - Found in ${p.source}</li>`)
+            .join('');
+    }
+
+    // Event listeners
+    methodSelect.addEventListener('change', function() {
+        toggleBodySection();
+        extractParameters();
+    });
+
+    urlInput.addEventListener('input', extractParameters);
+    headersInput.addEventListener('input', extractParameters);
+    bodyInput.addEventListener('input', extractParameters);
+
+    // Initial setup
+    extractParameters();
+});
+</script>
+
+<noscript>
+    <style>
+        #body-section { display: block !important; }
+    </style>
+</noscript>
+{% endblock %}

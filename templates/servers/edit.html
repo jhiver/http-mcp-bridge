@@ -1,0 +1,26 @@
+{% extends "base_authenticated.html" %}
+
+{% block title %}Edit Server - SaraMCP{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Edit Server</h1>
+
+    <form method="post" action="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-group">
+            <label for="name">Server Name</label>
+            <input type="text" id="name" name="name" value="{{ server.name }}" required class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="3" class="form-control">{% match server.description %}{% when Some with (desc) %}{{ desc }}{% when None %}{% endmatch %}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="/servers/{% match server.id %}{% when Some with (id) %}{{ id }}{% when None %}0{% endmatch %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

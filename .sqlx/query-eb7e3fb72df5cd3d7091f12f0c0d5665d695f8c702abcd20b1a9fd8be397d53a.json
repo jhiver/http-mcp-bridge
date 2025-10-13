@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE magic_login_tokens SET used_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "eb7e3fb72df5cd3d7091f12f0c0d5665d695f8c702abcd20b1a9fd8be397d53a"
+}

@@ -1,0 +1,44 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo
+# Cargo.lock is committed for binary projects
+
+# IDE
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+data/
+
+# Logs
+*.log
+logs/
+
+# macOS
+.DS_Store
+
+# Test coverage
+tarpaulin-report.html
+cobertura.xml
+coverage/
+
+# Temporary files
+tmp/
+temp/docker-compose.override.yml

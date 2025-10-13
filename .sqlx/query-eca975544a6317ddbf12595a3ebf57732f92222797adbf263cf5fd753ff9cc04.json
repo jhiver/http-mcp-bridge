@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM magic_login_tokens WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "eca975544a6317ddbf12595a3ebf57732f92222797adbf263cf5fd753ff9cc04"
+}

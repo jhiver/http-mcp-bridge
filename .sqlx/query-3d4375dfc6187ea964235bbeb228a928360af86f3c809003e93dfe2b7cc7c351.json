@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            DELETE FROM execution_history\n            WHERE started_at < datetime('now', '-' || ? || ' days')\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "3d4375dfc6187ea964235bbeb228a928360af86f3c809003e93dfe2b7cc7c351"
+}

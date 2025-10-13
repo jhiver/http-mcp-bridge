@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO tool_instances (server_id, tool_id, instance_name, description)\n            VALUES (?, ?, ?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "70c790d6e444b512ead8dcfc4a89e8efb2461749c369998fd60ebd93f93c4894"
+}

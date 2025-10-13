@@ -1,0 +1,80 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT id, code, client_id, user_id, redirect_uri, scope,\n                   code_challenge, code_challenge_method, expires_at,\n                   used as \"used!: i64\", created_at\n            FROM oauth_authorization_codes\n            WHERE code = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "code",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "client_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "redirect_uri",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "scope",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "code_challenge",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "code_challenge_method",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "expires_at",
+        "ordinal": 8,
+        "type_info": "Integer"
+      },
+      {
+        "name": "used!: i64",
+        "ordinal": 9,
+        "type_info": "Integer"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 10,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "b36b2ce10bddd70e1cf6d62564cda4559b9893df3e4da1bfa7010266f0fade56"
+}

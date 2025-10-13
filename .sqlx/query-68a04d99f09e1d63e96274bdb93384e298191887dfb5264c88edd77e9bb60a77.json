@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                UPDATE pending_registrations\n                SET password_hash = ?, token = ?, expires_at = ?, created_at = CURRENT_TIMESTAMP\n                WHERE id = ?\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "68a04d99f09e1d63e96274bdb93384e298191887dfb5264c88edd77e9bb60a77"
+}
