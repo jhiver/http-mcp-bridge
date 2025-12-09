@@ -8,6 +8,7 @@ use axum::{
     response::{Html, IntoResponse, Json, Redirect, Response},
     Form,
 };
+use base64::Engine;
 use serde::{Deserialize, Serialize};
 use tower_sessions::Session;
 
@@ -255,11 +256,20 @@ pub async fn authorize_consent(
 /// 2. refresh_token - Exchange refresh token for new tokens
 pub async fn token(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Form(request): Form<TokenRequest>,
 ) -> Result<Response, OAuthError> {
+    let (client_id, client_secret) = extract_client_credentials(&headers, &request)?;
+
+    state
+        .oauth_service
+        .verify_client_credentials(&client_id, &client_secret)
+        .await
+        .map_err(|_| OAuthError::InvalidClient("Invalid client credentials".to_string()))?;
+
     match request.grant_type.as_str() {
-        "authorization_code" => handle_authorization_code_grant(state, request).await,
-        "refresh_token" => handle_refresh_token_grant(state, request).await,
+        "authorization_code" => handle_authorization_code_grant(state, request, client_id).await,
+        "refresh_token" => handle_refresh_token_grant(state, request, client_id).await,
         _ => Err(OAuthError::UnsupportedGrantType),
     }
 }
@@ -267,17 +277,28 @@ pub async fn token(
 async fn handle_authorization_code_grant(
     state: AppState,
     request: TokenRequest,
+    client_id: String,
 ) -> Result<Response, OAuthError> {
+    let TokenRequest {
+        code,
+        redirect_uri,
+        code_verifier,
+        client_id: provided_client_id,
+        ..
+    } = request;
+
+    if let Some(provided) = provided_client_id {
+        if provided != client_id {
+            return Err(OAuthError::InvalidClient(
+                "client_id does not match authenticated client".to_string(),
+            ));
+        }
+    }
+
     // 1. Extract required fields
-    let code = request
-        .code
-        .ok_or_else(|| OAuthError::BadRequest("Missing code".to_string()))?;
-    let client_id = request
-        .client_id
-        .ok_or_else(|| OAuthError::BadRequest("Missing client_id".to_string()))?;
-    let redirect_uri = request
-        .redirect_uri
-        .ok_or_else(|| OAuthError::BadRequest("Missing redirect_uri".to_string()))?;
+    let code = code.ok_or_else(|| OAuthError::BadRequest("Missing code".to_string()))?;
+    let redirect_uri =
+        redirect_uri.ok_or_else(|| OAuthError::BadRequest("Missing redirect_uri".to_string()))?;
 
     // 2. Consume authorization code (validates and marks as used)
     let consumed = state
@@ -288,8 +309,7 @@ async fn handle_authorization_code_grant(
 
     // 3. Validate PKCE if present
     if let Some(challenge) = consumed.code_challenge {
-        let verifier = request
-            .code_verifier
+        let verifier = code_verifier
             .ok_or_else(|| OAuthError::BadRequest("Missing code_verifier".to_string()))?;
 
         let method = consumed.code_challenge_method.as_deref().unwrap_or("S256");
@@ -349,11 +369,13 @@ async fn handle_authorization_code_grant(
 async fn handle_refresh_token_grant(
     state: AppState,
     request: TokenRequest,
+    client_id: String,
 ) -> Result<Response, OAuthError> {
+    let TokenRequest { refresh_token, .. } = request;
+
     // 1. Extract refresh token
-    let refresh_token = request
-        .refresh_token
-        .ok_or_else(|| OAuthError::BadRequest("Missing refresh_token".to_string()))?;
+    let refresh_token =
+        refresh_token.ok_or_else(|| OAuthError::BadRequest("Missing refresh_token".to_string()))?;
 
     // 2. Consume refresh token (validates, marks as used)
     let consumed = state
@@ -361,6 +383,12 @@ async fn handle_refresh_token_grant(
         .consume_refresh_token(&refresh_token)
         .await
         .map_err(|e| OAuthError::InvalidGrant(e.to_string()))?;
+
+    if consumed.client_id != client_id {
+        return Err(OAuthError::InvalidClient(
+            "Refresh token client mismatch".to_string(),
+        ));
+    }
 
     // 3. Generate NEW access token (1 hour)
     let (access_token, _expires_at) = state
@@ -441,7 +469,10 @@ pub async fn authorization_server_metadata(
             "authorization_code".to_string(),
             "refresh_token".to_string(),
         ],
-        token_endpoint_auth_methods_supported: vec!["none".to_string()],
+        token_endpoint_auth_methods_supported: vec![
+            "client_secret_post".to_string(),
+            "client_secret_basic".to_string(),
+        ],
         code_challenge_methods_supported: vec!["S256".to_string(), "plain".to_string()],
     };
 
@@ -792,6 +823,44 @@ pub struct OAuthProtectedResourceMetadata {
     pub oauth_authorization_server: String,
     #[serde(rename = "protected-resources")]
     pub protected_resources: Vec<String>,
+}
+
+fn extract_client_credentials(
+    headers: &HeaderMap,
+    request: &TokenRequest,
+) -> Result<(String, String), OAuthError> {
+    if let Some(auth_header) = headers.get(header::AUTHORIZATION) {
+        let header_value = auth_header
+            .to_str()
+            .map_err(|_| OAuthError::InvalidClient("Invalid Authorization header".to_string()))?;
+
+        if header_value.starts_with("Basic ") {
+            let encoded = &header_value["Basic ".len()..];
+            let decoded = base64::engine::general_purpose::STANDARD
+                .decode(encoded)
+                .map_err(|_| {
+                    OAuthError::InvalidClient("Invalid Authorization header".to_string())
+                })?;
+            let decoded_str = String::from_utf8(decoded).map_err(|_| {
+                OAuthError::InvalidClient("Invalid Authorization header".to_string())
+            })?;
+
+            if let Some((client_id, client_secret)) = decoded_str.split_once(':') {
+                return Ok((client_id.to_string(), client_secret.to_string()));
+            } else {
+                return Err(OAuthError::InvalidClient(
+                    "Authorization header missing client credentials".to_string(),
+                ));
+            }
+        }
+    }
+
+    match (&request.client_id, &request.client_secret) {
+        (Some(id), Some(secret)) => Ok((id.clone(), secret.clone())),
+        _ => Err(OAuthError::InvalidClient(
+            "Client authentication required".to_string(),
+        )),
+    }
 }
 
 // ============================================================================

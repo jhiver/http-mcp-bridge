@@ -1,11 +1,12 @@
 use crate::{error::McpAuthError, models::server::Server, AppState};
 use axum::{
     extract::{Path, Request, State},
-    http::HeaderMap,
+    http::{header, HeaderMap, HeaderValue, StatusCode},
     middleware::Next,
-    response::Response,
+    response::{IntoResponse, Response},
 };
 use regex::Regex;
+use std::borrow::Cow;
 
 /// Extract UUID from path like /s/UUID or /s/UUID/sse
 fn extract_uuid_from_path(path: &str) -> Option<String> {
@@ -121,8 +122,17 @@ pub async fn mcp_auth_middleware(
 
         Some("organization") => {
             // Organization servers: require valid OAuth token
-            let token = extract_bearer_token(&headers)?;
-            let validated = state.oauth_service.validate_access_token(&token).await?;
+            let token = match extract_bearer_token(&headers) {
+                Ok(token) => token,
+                Err(err) => return handle_auth_error(err, &server_uuid, AuthResourceKind::Http),
+            };
+            let validated = match state.oauth_service.validate_access_token(&token).await {
+                Ok(validated) => validated,
+                Err(err) => {
+                    let mapped: McpAuthError = err.into();
+                    return handle_auth_error(mapped, &server_uuid, AuthResourceKind::Http);
+                }
+            };
 
             // Attach validated token to request for handlers to use
             request.extensions_mut().insert(validated);
@@ -132,8 +142,17 @@ pub async fn mcp_auth_middleware(
 
         Some("private") => {
             // Private servers: require valid OAuth token + ownership
-            let token = extract_bearer_token(&headers)?;
-            let validated = state.oauth_service.validate_access_token(&token).await?;
+            let token = match extract_bearer_token(&headers) {
+                Ok(token) => token,
+                Err(err) => return handle_auth_error(err, &server_uuid, AuthResourceKind::Http),
+            };
+            let validated = match state.oauth_service.validate_access_token(&token).await {
+                Ok(validated) => validated,
+                Err(err) => {
+                    let mapped: McpAuthError = err.into();
+                    return handle_auth_error(mapped, &server_uuid, AuthResourceKind::Http);
+                }
+            };
 
             // Check if user owns the server
             let can_access = state
@@ -190,8 +209,17 @@ pub async fn mcp_auth_middleware_sse(
 
         Some("organization") => {
             // Organization servers: require valid OAuth token
-            let token = extract_bearer_token(&headers)?;
-            let validated = state.oauth_service.validate_access_token(&token).await?;
+            let token = match extract_bearer_token(&headers) {
+                Ok(token) => token,
+                Err(err) => return handle_auth_error(err, &server_uuid, AuthResourceKind::Sse),
+            };
+            let validated = match state.oauth_service.validate_access_token(&token).await {
+                Ok(validated) => validated,
+                Err(err) => {
+                    let mapped: McpAuthError = err.into();
+                    return handle_auth_error(mapped, &server_uuid, AuthResourceKind::Sse);
+                }
+            };
 
             // Attach validated token to request for handlers to use
             request.extensions_mut().insert(validated);
@@ -201,8 +229,17 @@ pub async fn mcp_auth_middleware_sse(
 
         Some("private") => {
             // Private servers: require valid OAuth token + ownership
-            let token = extract_bearer_token(&headers)?;
-            let validated = state.oauth_service.validate_access_token(&token).await?;
+            let token = match extract_bearer_token(&headers) {
+                Ok(token) => token,
+                Err(err) => return handle_auth_error(err, &server_uuid, AuthResourceKind::Sse),
+            };
+            let validated = match state.oauth_service.validate_access_token(&token).await {
+                Ok(validated) => validated,
+                Err(err) => {
+                    let mapped: McpAuthError = err.into();
+                    return handle_auth_error(mapped, &server_uuid, AuthResourceKind::Sse);
+                }
+            };
 
             // Check if user owns the server
             let can_access = state
@@ -298,8 +335,19 @@ pub async fn mcp_auth_middleware_subdomain(
 
         Some("organization") => {
             // Organization servers: require valid OAuth token
-            let token = extract_bearer_token(&headers)?;
-            let validated = state.oauth_service.validate_access_token(&token).await?;
+            let token = match extract_bearer_token(&headers) {
+                Ok(token) => token,
+                Err(err) => {
+                    return handle_auth_error(err, &server_uuid, AuthResourceKind::Subdomain)
+                }
+            };
+            let validated = match state.oauth_service.validate_access_token(&token).await {
+                Ok(validated) => validated,
+                Err(err) => {
+                    let mapped: McpAuthError = err.into();
+                    return handle_auth_error(mapped, &server_uuid, AuthResourceKind::Subdomain);
+                }
+            };
 
             // Attach validated token to request for handlers to use
             request.extensions_mut().insert(validated);
@@ -309,8 +357,19 @@ pub async fn mcp_auth_middleware_subdomain(
 
         Some("private") => {
             // Private servers: require valid OAuth token + ownership
-            let token = extract_bearer_token(&headers)?;
-            let validated = state.oauth_service.validate_access_token(&token).await?;
+            let token = match extract_bearer_token(&headers) {
+                Ok(token) => token,
+                Err(err) => {
+                    return handle_auth_error(err, &server_uuid, AuthResourceKind::Subdomain)
+                }
+            };
+            let validated = match state.oauth_service.validate_access_token(&token).await {
+                Ok(validated) => validated,
+                Err(err) => {
+                    let mapped: McpAuthError = err.into();
+                    return handle_auth_error(mapped, &server_uuid, AuthResourceKind::Subdomain);
+                }
+            };
 
             // Check if user owns the server
             let can_access = state
@@ -336,6 +395,112 @@ pub async fn mcp_auth_middleware_subdomain(
         }
     }
 }
+
+#[derive(Clone, Copy)]
+enum AuthResourceKind {
+    Http,
+    Sse,
+    Subdomain,
+}
+
+fn handle_auth_error(
+    err: McpAuthError,
+    server_uuid: &str,
+    resource_kind: AuthResourceKind,
+) -> Result<Response, McpAuthError> {
+    match err {
+        McpAuthError::MissingAuthorizationHeader
+        | McpAuthError::InvalidAuthorizationFormat
+        | McpAuthError::InvalidToken
+        | McpAuthError::ExpiredToken => Ok(respond_with_bearer_challenge(
+            err,
+            server_uuid,
+            resource_kind,
+        )),
+        other => Err(other),
+    }
+}
+
+fn respond_with_bearer_challenge(
+    error: McpAuthError,
+    server_uuid: &str,
+    resource_kind: AuthResourceKind,
+) -> Response {
+    let (status, error_code, description) = error.describe();
+    let mut response = error.into_response();
+
+    if status == StatusCode::UNAUTHORIZED {
+        let (resource, resource_metadata) = compute_resource_urls(server_uuid, resource_kind);
+        let description = sanitize_header_value(description);
+        let header_value = format!(
+            r#"Bearer realm="{}", error="{}", error_description="{}", resource="{}", resource_metadata="{}""#,
+            AUTH_REALM, error_code, description, resource, resource_metadata
+        );
+
+        if let Ok(value) = HeaderValue::from_str(&header_value) {
+            response
+                .headers_mut()
+                .insert(header::WWW_AUTHENTICATE, value);
+        }
+    }
+
+    response
+}
+
+fn compute_resource_urls(server_uuid: &str, kind: AuthResourceKind) -> (String, String) {
+    match kind {
+        AuthResourceKind::Http => {
+            let base = canonical_base_url();
+            let resource = format!("{}/s/{}", base, server_uuid);
+            let metadata = format!(
+                "{}/.well-known/oauth-protected-resource/s/{}",
+                base, server_uuid
+            );
+            (resource, metadata)
+        }
+        AuthResourceKind::Sse => {
+            let base = canonical_base_url();
+            let resource = format!("{}/s/{}/sse", base, server_uuid);
+            let metadata = format!(
+                "{}/.well-known/oauth-protected-resource/s/{}",
+                base, server_uuid
+            );
+            (resource, metadata)
+        }
+        AuthResourceKind::Subdomain => {
+            let subdomain = format!("https://{}.saramcp.com", server_uuid);
+            let resource = format!("{}/", subdomain.trim_end_matches('/'));
+            let metadata = format!("{}/.well-known/oauth-protected-resource", subdomain);
+            (resource, metadata)
+        }
+    }
+}
+
+fn canonical_base_url() -> String {
+    let raw = std::env::var("BASE_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
+    let trimmed = raw.trim_end_matches('/').to_string();
+
+    if trimmed.starts_with("http://") {
+        let host = trimmed.trim_start_matches("http://");
+        if host.starts_with("localhost") || host.starts_with("127.0.0.1") {
+            trimmed
+        } else {
+            format!("https://{}", host)
+        }
+    } else {
+        trimmed
+    }
+}
+
+fn sanitize_header_value(input: &str) -> Cow<'_, str> {
+    if input.contains('"') {
+        Cow::Owned(input.replace('"', "'"))
+    } else {
+        Cow::Borrowed(input)
+    }
+}
+
+const AUTH_REALM: &str = "saramcp";
 
 #[cfg(test)]
 mod tests {

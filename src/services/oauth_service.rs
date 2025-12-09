@@ -153,6 +153,24 @@ impl OAuthService {
         OAuthClient::get_by_client_id(&self.pool, client_id).await
     }
 
+    /// Validate client credentials (client_id + client_secret)
+    pub async fn verify_client_credentials(
+        &self,
+        client_id: &str,
+        client_secret: &str,
+    ) -> Result<OAuthClient> {
+        let client = self
+            .get_client(client_id)
+            .await?
+            .ok_or_else(|| anyhow!("Invalid client_id"))?;
+
+        if !client.verify_secret(client_secret) {
+            bail!("Invalid client secret");
+        }
+
+        Ok(client)
+    }
+
     /// Create authorization code with 10 minute expiry
     pub async fn create_authorization_code(
         &self,

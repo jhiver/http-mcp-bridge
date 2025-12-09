@@ -190,30 +190,9 @@ pub enum McpAuthError {
     ServiceError(anyhow::Error),
 }
 
-impl std::fmt::Display for McpAuthError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl McpAuthError {
+    pub(crate) fn describe(&self) -> (StatusCode, &'static str, &'static str) {
         match self {
-            McpAuthError::MissingAuthorizationHeader => {
-                write!(f, "Authorization header is required")
-            }
-            McpAuthError::InvalidAuthorizationFormat => {
-                write!(f, "Authorization header must be 'Bearer <token>'")
-            }
-            McpAuthError::InvalidToken => write!(f, "Invalid access token"),
-            McpAuthError::ExpiredToken => write!(f, "Access token has expired"),
-            McpAuthError::Forbidden => {
-                write!(f, "You don't have permission to access this server")
-            }
-            McpAuthError::ServerNotFound => write!(f, "Server not found"),
-            McpAuthError::DatabaseError(e) => write!(f, "Database error: {}", e),
-            McpAuthError::ServiceError(e) => write!(f, "Service error: {}", e),
-        }
-    }
-}
-
-impl IntoResponse for McpAuthError {
-    fn into_response(self) -> Response {
-        let (status, error_code, description) = match self {
             McpAuthError::MissingAuthorizationHeader => (
                 StatusCode::UNAUTHORIZED,
                 "missing_token",
@@ -244,17 +223,39 @@ impl IntoResponse for McpAuthError {
                 "server_not_found",
                 "The requested server does not exist",
             ),
-            McpAuthError::DatabaseError(_) => (
+            McpAuthError::DatabaseError(_) | McpAuthError::ServiceError(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "internal_error",
                 "An internal error occurred",
             ),
-            McpAuthError::ServiceError(_) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "internal_error",
-                "An internal error occurred",
-            ),
-        };
+        }
+    }
+}
+
+impl std::fmt::Display for McpAuthError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            McpAuthError::MissingAuthorizationHeader => {
+                write!(f, "Authorization header is required")
+            }
+            McpAuthError::InvalidAuthorizationFormat => {
+                write!(f, "Authorization header must be 'Bearer <token>'")
+            }
+            McpAuthError::InvalidToken => write!(f, "Invalid access token"),
+            McpAuthError::ExpiredToken => write!(f, "Access token has expired"),
+            McpAuthError::Forbidden => {
+                write!(f, "You don't have permission to access this server")
+            }
+            McpAuthError::ServerNotFound => write!(f, "Server not found"),
+            McpAuthError::DatabaseError(e) => write!(f, "Database error: {}", e),
+            McpAuthError::ServiceError(e) => write!(f, "Service error: {}", e),
+        }
+    }
+}
+
+impl IntoResponse for McpAuthError {
+    fn into_response(self) -> Response {
+        let (status, error_code, description) = self.describe();
 
         let body = json!({
             "error": error_code,

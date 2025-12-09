@@ -75,7 +75,9 @@ async fn session_cookie_flags_are_secure_in_production() {
         "ok"
     }
 
-    let app = Router::new().route("/", get(set_session)).layer(session_layer);
+    let app = Router::new()
+        .route("/", get(set_session))
+        .layer(session_layer);
 
     let response = app
         .oneshot(
@@ -97,7 +99,11 @@ async fn session_cookie_flags_are_secure_in_production() {
     let cookie = tower_sessions::cookie::Cookie::parse(cookie_header)
         .expect("cookie header to parse correctly");
 
-    assert_eq!(cookie.name(), "__Host-session", "cookie name should be hardened");
+    assert_eq!(
+        cookie.name(),
+        "__Host-session",
+        "cookie name should be hardened"
+    );
     assert_eq!(cookie.http_only(), Some(true), "HttpOnly flag must be set");
     assert_eq!(cookie.secure(), Some(true), "Secure flag must be enabled");
     assert_eq!(
@@ -121,7 +127,10 @@ fn production_requires_https_flag() {
     env_guard.set("SESSION_SECRET", "a".repeat(64));
 
     let result = std::panic::catch_unwind(|| validate_production_config());
-    assert!(result.is_err(), "FORCE_HTTPS must be enforced in production");
+    assert!(
+        result.is_err(),
+        "FORCE_HTTPS must be enforced in production"
+    );
 }
 
 #[test]
